@@ -1,0 +1,84 @@
+{
+    "auth": {
+        "unauthorized": "Please sign in",
+        "invalidOrExpiredToken": "Token is invalid or expired",
+        "login": {
+            "success": "Logged in successfully.",
+            "invalid": "Invalid email or password.",
+            "required": "Please enter email and password.",
+            "expired": "Your session has expired. Please log in again.",
+            "failed": "Login failed. Please try again later.",
+            "unauthorized": "Incorrect email or password",
+            "verified": "Your account is not verified"
+        },
+        "register": {
+            "success": "Registered successfully.",
+            "account_exists": "Account already exists.",
+            "email_used": "Email is already in use.",
+            "password_weak": "Password must be at least 8 characters long.",
+            "required": "Please fill in all required fields.",
+            "failed": "Registration failed. Please try again later.",
+            "email_invalid": "Email is invalid"
+        },
+        "verify": {
+            "sent": "A verification link has been sent to your email.",
+            "success": "Verification successful.",
+            "invalid": "Invalid or expired verification code.",
+            "required": "Please enter the verification code.",
+            "failed": "Verification failed. Please try again.",
+            "email_not_registered": "This email has not registered an account yet.",
+            "verified": "This email has verified before."
+        },
+        "logout": {
+            "success": "Logged out successfully.",
+            "failed": "An error occurred while logging out."
+        },
+        "access": {
+            "unauthenticated": "You are not logged in.",
+            "unauthorized": "You do not have permission to access this feature.",
+            "token_invalid": "Invalid token. Please log in again.",
+            "account_locked": "Your account has been locked."
+        },
+        "email": {
+            "subject": "Verify your account",
+            "html": "<p>Please click the link below to verify your account:</p><a href=\"{link}\">Verify your account</a>"
+        },
+        "refresh": {
+            "success": "Session has been refreshed.",
+            "new_token_issued": "A new token has been issued.",
+            "token_not_found": "Refresh token not found in cookie",
+            "invalid_token": "Invalid token.",
+            "expired": "Session has expired.",
+            "user_not_found": "No user found for the given token.",
+            "revoked": "Token has been revoked.",
+            "not_provided": "Refresh token was not provided.",
+            "failed": "Authentication failed. Please log in again."
+        },
+        "reset_password": {
+            "succes": "Change password successfully",
+            "sent": "A reset password link has been sent to your email",
+            "email_not_registered": "This email has not registered an account yet.",
+            "subject": "Forgot password",
+            "html": "<p>Please click the link below to reset your password:</p><a href=\"{link}\">Reset password</a>",
+            "error": "The reset password link is expired. Create new",
+            "required": "Please enter all informations"
+        }
+    },
+    "cart": {
+        "required": "Please provide all required information.",
+        "item_not_found": "The product is currently unavailable.",
+        "cart_not_found": "Your cart does not exist.",
+        "delete_success": "The product has been removed from your cart.",
+        "amount_invalid": "Invalid quantity.",
+        "update_success": "The product has been updated in your cart.",
+        "add_success": "The product has been added to your cart."
+    },
+    "order": {
+        "invalid": "Invalid order.",
+        "failed": "Failed to create the order.",
+        "success": "Order created successfully."
+    },
+    "product": {
+        "item_not_found": "The product does not exist"
+    }
+}

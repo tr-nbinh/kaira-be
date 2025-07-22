@@ -1,0 +1,513 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Model: addresses ---
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model Address { // Đổi tên model từ 'addresses' thành 'Address'
+  id             Int       @id @default(autoincrement()) @map("address_id")
+  userId         Int       @map("user_id")
+  provinceCode   String    @db.VarChar(10) @map("province_code")
+  districtCode   String    @db.VarChar(10) @map("district_code")
+  wardCode       String    @db.VarChar(10) @map("ward_code")
+  addressExtra   String?   @db.VarChar(50) @map("address_extra")
+  createdAt      DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt      DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6) // Thêm @updatedAt
+  email          String    @default("") @db.VarChar(255)
+  phone          String    @default("") @db.VarChar(20)
+  receiverName   String    @default("") @db.VarChar(255) @map("receiver_name")
+  isDefault      Boolean   @default(false) @map("is_default")
+  address        String?   @db.VarChar(500)
+  street         String    @db.VarChar(100)
+  // Quan hệ 1-nhiều với User
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade) // 'users' thành 'user', references: [id]
+  orders         Order[] // Thêm quan hệ ngược với Order
+
+  @@map("addresses") // Ánh xạ tới tên bảng gốc
+  @@index([districtCode], map: "idx_addresses_district_code")
+  @@index([provinceCode], map: "idx_addresses_province_code")
+  @@index([userId], map: "idx_addresses_user_id")
+  @@index([wardCode], map: "idx_addresses_ward_code")
+}
+
+// --- Model: banner_translations ---
+model BannerTranslation { // Đổi tên model
+  id           Int       @id @default(autoincrement()) @map("translation_id")
+  bannerId     Int       @map("banner_id")
+  languageCode String    @db.VarChar(10) @map("language_code")
+  headline     String?   @db.VarChar(255)
+  subHeadline  String?   @map("sub_headline")
+  buttonText   String?   @db.VarChar(100) @map("button_text")
+  createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6) // Thêm @updatedAt
+  // Quan hệ nhiều-một với Banner
+  banner       Banner    @relation(fields: [bannerId], references: [id], onDelete: Cascade) // 'banners' thành 'banner', references: [id]
+
+  @@unique([bannerId, languageCode], map: "unique_banner_lang")
+  @@map("banner_translations")
+  @@index([bannerId], map: "idx_banner_translations_banner_id")
+  @@index([languageCode], map: "idx_banner_translations_lang_code") // Thêm index này nếu chưa có
+}
+
+// --- Model: banners ---
+model Banner { // Đổi tên model
+  id             Int                 @id @default(autoincrement()) @map("banner_id")
+  name           String              @db.VarChar(255)
+  imageUrl       String              @db.VarChar(255) @map("image_url")
+  mobileImageUrl String?             @db.VarChar(255) @map("mobile_image_url")
+  videoUrl       String?             @db.VarChar(255) @map("video_url")
+  altText        String?             @db.VarChar(255) @map("alt_text")
+  linkUrl        String?             @db.VarChar(255) @map("link_url")
+  order          Int?                @default(0) // 'order' không cần map nếu không trùng từ khóa SQL
+  startDate      DateTime?           @db.Timestamptz(6) @map("start_date")
+  endDate        DateTime?           @db.Timestamptz(6) @map("end_date")
+  isActive       Boolean?            @default(true) @map("is_active")
+  createdAt      DateTime?           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime?           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6) // Thêm @updatedAt
+  publicId       String              @db.VarChar(255) @map("public_id")
+  // Quan hệ 1-nhiều với BannerTranslation
+  translations   BannerTranslation[] 
+
+  @@map("banners")
+}
+
+// --- Model: brands ---
+model Brand { // Đổi tên model
+  id          Int       @id @default(autoincrement()) @map("brand_id")
+  name        String?   @db.VarChar(100)
+  description String?
+  createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt   DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6) // Thêm @updatedAt
+  // Quan hệ 1-nhiều với Product
+  products    Product[]
+
+  @@map("brands")
+  @@index([id], map: "idx_brands_brand_id") // Nên là id thay vì brand_id
+}
+
+// --- Model: cart_items ---
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model CartItem { // Đổi tên model
+  id             Int            @id @default(autoincrement()) @map("item_id")
+  cartId         Int            @map("cart_id")
+  variantId      Int            @map("variant_id")
+  quantity       Int            @default(1)
+  createdAt      DateTime?      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime?      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6) // Thêm @updatedAt
+  // Quan hệ nhiều-một với Cart
+  cart           Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade) // 'carts' thành 'cart', references: [id]
+  // Quan hệ nhiều-một với ProductVariant
+  productVariant ProductVariant @relation(fields: [variantId], references: [id]) // 'product_variants' thành 'productVariant', references: [id]
+
+  @@unique([cartId, variantId])
+  @@map("cart_items")
+}
+
+// --- Model: carts ---
+model Cart { // Đổi tên model
+  id               Int                @id @default(autoincrement()) @map("cart_id")
+  userId           Int                @unique @map("user_id")
+  createdAt        DateTime?          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime?          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6) // Thêm @updatedAt
+  status           String?            @default("active") @db.VarChar(50)
+  // Quan hệ 1-nhiều với CartItem
+  items            CartItem[] // Đã xóa @map("cart_items")
+  // Quan hệ 1-1 với User
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade) // 'users' thành 'user', references: [id]
+  // Quan hệ 1-nhiều với CheckoutSession
+  checkoutSessions CheckoutSession[]
+
+  @@map("carts")
+}
+
+// --- Model: categories ---
+model Category { // Đổi tên model
+  id               Int                 @id @default(autoincrement()) @map("category_id")
+  parentCategoryId Int?                @map("parent_category_id")
+  imageUrl         String?             @db.VarChar(255) @map("image_url")
+  publicId         String              @db.VarChar(255) @map("public_id")
+  order            Int?                @default(0) // 'order' không cần map
+  // Quan hệ tự tham chiếu (Parent-Child)
+  parent           Category?           @relation("CategoryHierarchy", fields: [parentCategoryId], references: [id], onDelete: SetNull) // 'categories' thành 'parent', references: [id]
+  children         Category[]          @relation("CategoryHierarchy") // 'other_categories' thành 'children'
+  // Quan hệ 1-nhiều với CategoryTranslation
+  translations     CategoryTranslation[] // Đã xóa @map("category_translations")
+  // Quan hệ 1-nhiều với ProductCategory
+  productCategories ProductCategory[] // Đã xóa @map("product_category")
+
+  @@map("categories")
+}
+
+// --- Model: category_translations ---
+model CategoryTranslation { // Đổi tên model
+  id           Int      @id @default(autoincrement()) @map("category_translation_id")
+  categoryId   Int      @map("category_id")
+  languageCode String   @db.VarChar(10) @map("language_code")
+  name         String   @db.VarChar(100)
+  buttonText   String?  @db.VarChar(100) @map("button_text")
+  // Quan hệ nhiều-một với Category
+  category     Category @relation(fields: [categoryId], references: [id], onDelete: Cascade) // 'categories' thành 'category', references: [id]
+
+  @@unique([categoryId, languageCode])
+  @@map("category_translations")
+  @@index([categoryId], map: "idx_category_translations_category_id")
+  @@index([languageCode], map: "idx_category_translations_lang_code") // Thêm index này nếu chưa có
+}
+
+// --- Model: checkout_sessions ---
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model CheckoutSession { // Đổi tên model
+  id        Int       @id @default(autoincrement())
+  sessionId String    @unique @db.Uuid @map("session_id")
+  userId    Int       @map("user_id")
+  cartId    Int       @map("cart_id")
+  status    String    @default("pending") @db.VarChar(20)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6) // Thêm @updatedAt
+  // Quan hệ nhiều-một với Cart
+  cart      Cart      @relation(fields: [cartId], references: [id], onDelete: SetNull) // 'carts' thành 'cart', references: [id]
+  // Quan hệ nhiều-một với User
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade) // 'users' thành 'user', references: [id]
+
+  @@map("checkout_sessions")
+  @@index([cartId], map: "idx_checkout_cart_id")
+  @@index([status], map: "idx_checkout_status")
+  @@index([userId], map: "idx_checkout_user_id")
+}
+
+// --- Model: color_translations ---
+model ColorTranslation { // Đổi tên model
+  id           Int    @id @default(autoincrement()) @map("color_translation_id")
+  colorId      Int    @map("color_id")
+  languageCode String @db.VarChar(10) @map("language_code")
+  name         String @db.VarChar(50)
+  // Quan hệ nhiều-một với Color
+  color        Color  @relation(fields: [colorId], references: [id], onDelete: Cascade) // 'colors' thành 'color', references: [id]
+
+  @@unique([colorId, languageCode])
+  @@map("color_translations")
+  @@index([colorId], map: "idx_color_translations_color_id")
+}
+
+// --- Model: colors ---
+model Color { // Đổi tên model
+  id               Int                @id @default(autoincrement()) @map("color_id")
+  hexCode          String?            @db.VarChar(7) @map("hex_code")
+  // Quan hệ 1-nhiều với ColorTranslation
+  translations     ColorTranslation[] // Đã xóa @map("color_translations")
+  // Quan hệ 1-nhiều với ProductVariant
+  productVariants  ProductVariant[] // Đã xóa @map("product_variants")
+
+  @@map("colors")
+}
+
+// --- Model: menu_translations ---
+model MenuTranslation { // Đổi tên model
+  id           Int       @id @default(autoincrement()) @map("translation_id")
+  menuId       Int       @map("menu_id")
+  languageCode String    @db.VarChar(10) @map("language_code")
+  name         String    @db.VarChar(255)
+  createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6) // Thêm @updatedAt
+  // Quan hệ nhiều-một với Menu
+  menu         Menu      @relation(fields: [menuId], references: [id], onDelete: Cascade) // 'menus' thành 'menu', references: [id]
+
+  @@unique([menuId, languageCode], map: "uk_menu_translations_menu_id_language_code")
+  @@map("menu_translations")
+  @@index([languageCode], map: "idx_menu_translations_locale")
+  @@index([menuId], map: "idx_menu_translations_menu_id")
+}
+
+// --- Model: menus ---
+model Menu { // Đổi tên model
+  id               Int                 @id @default(autoincrement()) @map("menu_id")
+  path             String              @db.VarChar(255)
+  icon             String?             @db.VarChar(100)
+  order            Int                 @default(0) // 'order' không cần map
+  parentId         Int?                @map("parent_id")
+  createdAt        DateTime?           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime?           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6) // Thêm @updatedAt
+  // Quan hệ 1-nhiều với MenuTranslation
+  translations     MenuTranslation[] // Đã xóa @map("menu_translations")
+  // Quan hệ tự tham chiếu (Parent-Child)
+  parent           Menu?               @relation("MenuHierarchy", fields: [parentId], references: [id], onDelete: SetNull) // 'menus' thành 'parent', references: [id]
+  children         Menu[]              @relation("MenuHierarchy") // 'other_menus' thành 'children'
+
+  @@map("menus")
+  @@index([parentId], map: "idx_menus_parent_id")
+}
+
+// --- Model: order_items ---
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model OrderItem { // Đổi tên model
+  id             Int            @id @default(autoincrement()) @map("order_item_id")
+  orderId        Int            @map("order_id")
+  variantId      Int            @map("variant_id")
+  quantity       Int
+  price          Decimal        @db.Decimal(10, 2)
+  // Quan hệ nhiều-một với Order
+  order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade) // 'orders' thành 'order', references: [id]
+  // Quan hệ nhiều-một với ProductVariant
+  productVariant ProductVariant @relation(fields: [variantId], references: [id]) // 'product_variants' thành 'productVariant', references: [id]
+
+  @@map("order_items")
+  @@index([orderId], map: "idx_order_items_order_id")
+  @@index([variantId], map: "idx_order_items_variant_id")
+}
+
+// --- Model: orders ---
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model Order { // Đổi tên model
+  id             Int         @id @default(autoincrement()) @map("order_id")
+  userId         Int         @map("user_id")
+  addressId      Int         @map("address_id")
+  note           String?
+  paymentMethod  String      @db.VarChar(20) @map("payment_method")
+  shippingFee    Int         @default(0) @map("shipping_fee")
+  totalAmount    Int         @map("total_amount")
+  status         String      @default("pending") @db.VarChar(20)
+  createdAt      DateTime?   @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt      DateTime?   @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6) // Thêm @updatedAt
+  // Quan hệ 1-nhiều với OrderItem
+  items          OrderItem[] // Đã xóa @map("order_items")
+  // Quan hệ nhiều-một với User
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade) // 'users' thành 'user', references: [id]
+  // Thêm quan hệ nhiều-một với Address
+  address        Address     @relation(fields: [addressId], references: [id]) // Thêm quan hệ với Address
+
+  @@map("orders")
+  @@index([createdAt], map: "idx_orders_created_at")
+  @@index([status], map: "idx_orders_status")
+  @@index([userId], map: "idx_orders_user_id")
+}
+
+// --- Model: product_category ---
+model ProductCategory { // Đổi tên model
+  productId  Int @map("product_id")
+  categoryId Int @map("category_id")
+  // Quan hệ nhiều-một với Category
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade) // 'categories' thành 'category', references: [id]
+  // Quan hệ nhiều-một với Product
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade) // 'products' thành 'product', references: [id]
+
+  @@id([productId, categoryId])
+  @@map("product_category")
+}
+
+// --- Model: product_translations ---
+model ProductTranslation { // Đổi tên model
+  id           Int       @id @default(autoincrement()) @map("product_translation_id")
+  productId    Int       @map("product_id")
+  languageCode String    @db.VarChar(10) @map("language_code")
+  name         String    @db.VarChar(255)
+  description  String?
+  slug         String    @db.VarChar(255)
+  // Quan hệ nhiều-một với Product
+  product      Product   @relation(fields: [productId], references: [id], onDelete: Cascade) // 'products' thành 'product', references: [id]
+
+  @@unique([productId, languageCode])
+  @@unique([productId, languageCode], map: "unique_product_lang") // Unique này có thể bị trùng nếu unique đầu tiên đã bao gồm
+  @@map("product_translations")
+  @@index([languageCode], map: "idx_product_translations_language_code")
+  @@index([productId], map: "idx_product_translations_product_id")
+}
+
+// --- Model: product_variants ---
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model ProductVariant { // Đổi tên model
+  id                Int         @id @default(autoincrement()) @map("variant_id")
+  productId         Int         @map("product_id")
+  sku               String      @unique @db.VarChar(50)
+  colorId           Int?        @map("color_id")
+  sizeId            Int?        @map("size_id")
+  price             Decimal     @db.Decimal(10, 2)
+  discountPercentage Decimal?    @db.Decimal(5, 2) @map("discount_percentage")
+  quantityInStock   Int         @default(0) @map("quantity_in_stock")
+  status            String?     @default("Còn hàng") @db.VarChar(50)
+  weightKg          Decimal?    @db.Decimal(8, 2) @map("weight_kg")
+  dimensionsCm      String?     @db.VarChar(100) @map("dimensions_cm")
+  // Quan hệ 1-nhiều với CartItem
+  cartItems         CartItem[]  // Đã xóa @map("cart_items")
+  // Quan hệ 1-nhiều với OrderItem
+  orderItems        OrderItem[] // Đã xóa @map("order_items")
+  // Quan hệ nhiều-một với Color
+  color             Color?      @relation(fields: [colorId], references: [id]) // 'colors' thành 'color', references: [id]
+  // Quan hệ nhiều-một với Product
+  product           Product     @relation(fields: [productId], references: [id], onDelete: Cascade) // 'products' thành 'product', references: [id]
+  // Quan hệ nhiều-một với Size
+  size              Size?       @relation(fields: [sizeId], references: [id]) // 'sizes' thành 'size', references: [id]
+  // Quan hệ 1-nhiều với VariantImage
+  variantImages     VariantImage[] // Đã xóa @map("variant_images")
+
+  @@unique([productId, colorId, sizeId])
+  @@map("product_variants")
+  @@index([colorId], map: "idx_product_variants_color_id")
+  @@index([price], map: "idx_product_variants_price")
+  @@index([productId], map: "idx_product_variants_product_id")
+  @@index([sizeId], map: "idx_product_variants_size_id")
+  @@index([sku], map: "idx_product_variants_sku")
+}
+
+// --- Model: products ---
+model Product { // Đổi tên model
+  id                  Int                  @id @default(autoincrement()) @map("product_id")
+  isFavorite          Boolean?             @default(false) @map("is_favorite")
+  bestSeller          Boolean?             @default(false) @map("best_seller")
+  bestReviewed        Boolean?             @default(false) @map("best_reviewed")
+  isNewArrival        Boolean?             @default(false) @map("is_new_arrival")
+  createdAt           DateTime?            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime?            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6) // Thêm @updatedAt
+  brandId             Int?                 @map("brand_id")
+  // Quan hệ 1-nhiều với ProductCategory
+  productCategories   ProductCategory[]    // Đã xóa @map("product_category")
+  // Quan hệ 1-nhiều với ProductTranslation
+  translations        ProductTranslation[] // Đã xóa @map("product_translations")
+  // Quan hệ 1-nhiều với ProductVariant
+  variants            ProductVariant[]     // Đã xóa @map("product_variants")
+  // Quan hệ nhiều-một với Brand
+  brand               Brand?               @relation(fields: [brandId], references: [id]) // 'brands' thành 'brand', references: [id]
+
+  @@map("products")
+  @@index([bestReviewed], map: "idx_products_best_reviewed")
+  @@index([bestSeller], map: "idx_products_best_seller")
+  @@index([brandId], map: "idx_products_brand_id")
+  @@index([isNewArrival], map: "idx_products_is_new_arrival")
+}
+
+// --- Model: quote_translations ---
+model QuoteTranslation { // Đổi tên model
+  id           Int       @id @default(autoincrement()) @map("translation_id")
+  quoteId      Int       @map("quote_id")
+  languageCode String    @db.VarChar(10) @map("language_code")
+  content      String
+  createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6) // Thêm @updatedAt
+  // Quan hệ nhiều-một với Quote
+  quote        Quote     @relation(fields: [quoteId], references: [id], onDelete: Cascade) // 'quotes' thành 'quote', references: [id]
+
+  @@unique([quoteId, languageCode], map: "unique_quote_lang")
+  @@map("quote_translations")
+}
+
+// --- Model: quotes ---
+model Quote { // Đổi tên model
+  id            Int                @id @default(autoincrement()) @map("quote_id")
+  authorName    String             @db.VarChar(100) @map("author_name")
+  source        String?            @db.VarChar(100)
+  imageUrl      String?            @db.VarChar(255) @map("image_url")
+  imagePublicId String?            @db.VarChar(255) @map("image_public_id")
+  displayOrder  Int?               @default(0) @map("display_order")
+  isActive      Boolean?           @default(true) @map("is_active")
+  createdAt     DateTime?          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime?          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6) // Thêm @updatedAt
+  // Quan hệ 1-nhiều với QuoteTranslation
+  translations  QuoteTranslation[] // Đã xóa @map("quote_translations")
+
+  @@map("quotes")
+}
+
+// --- Model: size_translations ---
+model SizeTranslation { // Đổi tên model
+  id           Int    @id @default(autoincrement()) @map("size_translation_id")
+  sizeId       Int    @map("size_id")
+  languageCode String @db.VarChar(10) @map("language_code")
+  name         String @db.VarChar(20)
+  // Quan hệ nhiều-một với Size
+  size         Size   @relation(fields: [sizeId], references: [id], onDelete: Cascade) // 'sizes' thành 'size', references: [id]
+
+  @@unique([sizeId, languageCode])
+  @@map("size_translations")
+  @@index([sizeId], map: "idx_size_translations_size_id")
+}
+
+// --- Model: sizes ---
+model Size { // Đổi tên model
+  id               Int                @id @default(autoincrement()) @map("size_id")
+  displayOrder     Int?               @default(0) @map("display_order")
+  // Quan hệ 1-nhiều với ProductVariant
+  productVariants  ProductVariant[] // Đã xóa @map("product_variants")
+  // Quan hệ 1-nhiều với SizeTranslation
+  translations     SizeTranslation[] // Đã xóa @map("size_translations")
+
+  @@map("sizes")
+}
+
+// --- Model: users ---
+model User { // Đổi tên model
+  id                          Int                 @id @default(autoincrement()) @map("user_id")
+  username                    String              @unique @db.VarChar(50)
+  email                       String              @unique @db.VarChar(100)
+  passwordHash                String              @db.VarChar(255) @map("password_hash")
+  createdAt                   DateTime?           @default(now()) @map("created_at") @db.Timestamptz(6)
+  refreshTokenHash            String?             @db.VarChar(255) @map("refresh_token_hash")
+  refreshTokenExpiresAt       DateTime?           @db.Timestamptz(6) @map("refresh_token_expires_at")
+  isVerified                  Boolean?            @default(false) @map("is_verified")
+  verificationToken           String?             @db.VarChar(255) @map("verification_token")
+  verificationTokenExpiresAt  DateTime?           @db.Timestamptz(6) @map("verification_token_expires_at")
+  resetToken                  String?             @unique @db.VarChar(255) @map("reset_token")
+  resetTokenExpire            DateTime?           @db.Timestamptz(6) @map("reset_token_expire")
+  // Quan hệ 1-nhiều với Address
+  addresses                   Address[]
+  // Quan hệ 1-1 với Cart
+  cart                        Cart? // 'carts' thành 'cart', không cần @map nếu tên bảng đúng là carts
+  // Quan hệ 1-nhiều với CheckoutSession
+  checkoutSessions            CheckoutSession[] // Đã xóa @map("checkout_sessions")
+  // Quan hệ 1-nhiều với Order
+  orders                      Order[]
+  // Quan hệ 1-nhiều với Wishlist
+  wishlists                   Wishlist[] // Đã xóa @map("wishlist")
+
+  @@map("users")
+}
+
+// --- Model: variant_images ---
+model VariantImage { // Đổi tên model
+  id             Int            @id @default(autoincrement()) @map("image_id")
+  variantId      Int            @map("variant_id")
+  imageUrl       String         @db.VarChar(255) @map("image_url")
+  isMainImage    Boolean?       @default(false) @map("is_main_image")
+  displayOrder   Int?           @default(0) @map("display_order")
+  uploadedAt     DateTime?      @default(now()) @map("uploaded_at") @db.Timestamp(6)
+  publicId       String?        @unique(map: "unique_public_id") @map("public_id")
+  // Quan hệ nhiều-một với ProductVariant
+  productVariant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade) // 'product_variants' thành 'productVariant', references: [id]
+
+  @@map("variant_images")
+  @@index([variantId], map: "idx_variant_images_variant_id")
+}
+
+// --- Model: wishlist ---
+model Wishlist { // Đổi tên model
+  id          Int            @id @default(autoincrement()) @map("wishlist_id")
+  userId      Int            @map("user_id")
+  createdAt   DateTime?      @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt   DateTime?      @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6) // Thêm @updatedAt
+  // Quan hệ nhiều-một với User
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade) // 'users' thành 'user', references: [id]
+  // Quan hệ 1-nhiều với WishlistItem
+  items       WishlistItem[] // Đã xóa @map("wishlist_items")
+
+  @@unique([userId, id]) // Thay đổi từ wishlist_id thành id
+  @@map("wishlist")
+}
+
+// --- Model: wishlist_items ---
+model WishlistItem { // Đổi tên model
+  id          Int       @id @default(autoincrement()) @map("item_id")
+  wishlistId  Int       @map("wishlist_id")
+  createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt   DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6) // Thêm @updatedAt
+  variantId   Int?      @map("variant_id")
+  // Quan hệ nhiều-một với Wishlist
+  wishlist    Wishlist  @relation(fields: [wishlistId], references: [id], onDelete: Cascade) // 'wishlist' thành 'wishlist', references: [id]
+
+  @@unique([wishlistId, variantId], map: "wishlist_id_variant_id")
+  @@map("wishlist_items")
+}

@@ -1,0 +1,92 @@
+{
+    "auth": {
+        "unauthorized": "Xin vui lòng đăng nhập",
+        "invalidOrExpiredToken": "Token không đúng hoặc hết hạn",
+        "login": {
+            "success": "Đăng nhập thành công.",
+            "invalid": "Email hoặc mật khẩu không đúng.",
+            "required": "Vui lòng nhập email và mật khẩu.",
+            "expired": "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+            "failed": "Đăng nhập thất bại. Vui lòng thử lại sau.",
+            "unauthorized": "Sai địa chỉ email hoặc mật khẩu",
+            "verified": "Tài khoản của bạn chưa được xác thực"
+        },
+        "register": {
+            "success": "Đăng ký thành công.",
+            "account_exists": "Tài khoản đã tồn tại.",
+            "email_used": "Email đã được sử dụng.",
+            "password_weak": "Mật khẩu phải có ít nhất 8 ký tự.",
+            "required": "Vui lòng điền đầy đủ thông tin.",
+            "failed": "Đăng ký thất bại. Vui lòng thử lại sau.",
+            "email_invalid": "Địa chỉ email không hợp lệ"
+        },
+        "verify": {
+            "sent": "Liên kết xác thực đã được gửi đến email của bạn.",
+            "success": "Xác thực thành công.",
+            "invalid": "Mã xác thực không hợp lệ hoặc đã hết hạn.",
+            "required": "Vui lòng nhập mã xác thực.",
+            "failed": "Xác thực thất bại. Vui lòng thử lại.",
+            "email_not_registered": "Email này chưa đăng ký tài khoản.",
+            "verified": "Email này đã xác thực trước đó."
+        },
+        "logout": {
+            "success": "Đăng xuất thành công.",
+            "failed": "Có lỗi xảy ra khi đăng xuất."
+        },
+        "access": {
+            "unauthenticated": "Bạn chưa đăng nhập.",
+            "unauthorized": "Bạn không có quyền truy cập chức năng này.",
+            "token_invalid": "Token không hợp lệ. Vui lòng đăng nhập lại.",
+            "account_locked": "Tài khoản của bạn đã bị khóa."
+        },
+        "email": {
+            "subject": "Xác thực tài khoản của bạn",
+            "html": "<p>Vui lòng nhấp vào đường link sau để xác thực tài khoản của bạn:</p><a href=\"{link}\">Xác thực tài khoản</a>"
+        },
+        "refresh": {
+            "success": "Phiên đăng nhập đã được làm mới.",
+            "new_token_issued": "Token mới đã được cấp.",
+            "token_not_found": "Không thấy refresh token trong cookie",
+            "invalid_token": "Token không hợp lệ.",
+            "expired": "Phiên đăng nhập đã hết hạn.",
+            "user_not_found": "Không tìm thấy người dùng tương ứng với token.",
+            "revoked": "Token đã bị thu hồi.",
+            "not_provided": "Refresh token không được cung cấp.",
+            "failed": "Xác thực thất bại. Vui lòng đăng nhập lại."
+        },
+        "reset_password": {
+            "succes": "Thay đổi mật khẩu thành công",
+            "sent": "Liên kết đặt lại mật khẩu đã gửi đến email của bạn.",
+            "email_not_registered": "Email này chưa đăng ký tài khoản.",
+            "subject": "Quên mật khẩu",
+            "html": "<p>Vui lòng nhấp vào đường link sau để đặt lại mật khẩu:</p><a href=\"{link}\">Đặt lại mật khẩu</a>",
+            "error": "Liên kết đặt lại mật khẩu đã hết hạn. Hãy tạo mới",
+            "required": "Vui lòng nhập đầy đủ thông tin"
+        }
+    },
+    "cart": {
+        "required": "Vui lòng cung cấp đủ thông tin",
+        "item_not_found": "Sản phẩm hiện không khả dụng",
+        "cart_not_found": "Giỏ hàng hiện không tồn tại",
+        "delete_success": "Sản phẩm đã xóa khỏi giỏ hàng",
+        "amount_invalid": "Số lượng không hợp lệ",
+        "update_success": "Sản phẩm đã được cập nhật",
+        "add_success": "Sản phẩm đã được thêm vào giỏ hàng"
+    },
+    "wishlist": {
+        "required": "Vui lòng cung cấp đủ thông tin",
+        "item_not_found": "Sản phẩm hiện không khả dụng",
+        "wishlist_not_found": "Mục yêu thích hiện không tồn tại",
+        "delete_success": "Sản phẩm đã xóa khỏi mục yêu thích",
+        "add_success": "Sản phẩm đã được thêm vào mục yêu thích",
+        "item_existed": "Sản phẩm đã có trong mục yêu thích"
+    },
+    "order": {
+        "invalid": "Đơn hàng không hợp lệ",
+        "failed": "Tạo đơn hàng không thành công",
+        "success": "Tạo đơn hàng thành công"
+    },
+    "product": {
+        "item_not_found": "Không tìm thấy sản phẩm"
+    }
+}
