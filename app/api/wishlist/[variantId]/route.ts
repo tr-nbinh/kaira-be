@@ -5,7 +5,7 @@ import { getAuthenticatedUserId } from "@/lib/utils/auth-util";
 import { handleApiError } from "@/lib/utils/handleError";
 import { NextRequest } from "next/server";
 
-export async function DELETE(req: NextRequest, { params }: { params: { variantId: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ variantId: string }> }) {
     
     try {
         const { t } = await getApiI18nContext(req);
@@ -14,9 +14,10 @@ export async function DELETE(req: NextRequest, { params }: { params: { variantId
         if (!userId) {
             return response({ message: t("auth.unauthorized") }, 401);
         }
-    
-        const variantId = parseInt(params.variantId);
-        if (!variantId) {
+        
+        const { variantId } = await params;
+        const newVariantId = parseInt(variantId);
+        if (!newVariantId) {
             return response({ message: t("wishlist.item_not_found") }, 400);
     
         }
@@ -28,7 +29,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { variantId
             return response({ message: t('wishlist.wishlist_not_found') }, 404);
         }
         await db.wishlistItem.delete({
-            where: { wishlistId_variantId: { wishlistId: wishlist.id, variantId: variantId } },
+            where: { wishlistId_variantId: { wishlistId: wishlist.id, variantId: newVariantId } },
         });
 
 		const totalItems = await db.wishlistItem.count({

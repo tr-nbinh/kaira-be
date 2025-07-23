@@ -5,7 +5,7 @@ import { getAuthenticatedUserId } from "@/lib/utils/auth-util";
 import { handleApiError } from "@/lib/utils/handleError";
 import { NextRequest } from "next/server";
 
-export async function DELETE(req: NextRequest, { params }: { params: { variantId: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ variantId: string }> }) {
 	try {
 		const { t } = await getApiI18nContext(req);
 
@@ -13,9 +13,9 @@ export async function DELETE(req: NextRequest, { params }: { params: { variantId
 		if (!userId) {
 			return response({ message: t("auth.unauthorized") }, 401);
 		}
-
-		const variantId = parseInt(params.variantId);
-		if (!variantId) {
+        const { variantId } = await params
+		const newVariantId = parseInt(variantId);
+		if (!newVariantId) {
 			return response({ message: t("cart.item_not_found") }, 400);
 		}
 
@@ -27,7 +27,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { variantId
 		}
 
 		await db.cartItem.delete({
-			where: { cartId_variantId: { cartId: cart.id, variantId: variantId } },
+			where: { cartId_variantId: { cartId: cart.id, variantId: newVariantId } },
 		});
 
 		const totalItems = await db.cartItem.count({
