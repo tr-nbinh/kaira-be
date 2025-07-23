@@ -3,13 +3,14 @@ import { getAuthenticatedUserId } from "@/lib/utils/auth-util";
 import { handleApiError } from "@/lib/utils/handleError";
 import { NextRequest } from "next/server";
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
 	const userId = getAuthenticatedUserId(req);
 	if (!userId) {
 		return Response.json({ message: "UserId is invalid" }, { status: 400 });
 	}
 
-	const addressId = await parseInt(params.id);
+    const { id } = await params;
+	const addressId = parseInt(id);
 	if (!addressId) {
 		return Response.json({ message: "Address id không hợp lệ" }, { status: 400 });
 	}
