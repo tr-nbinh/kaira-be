@@ -1,15 +1,12 @@
 // middleware-handlers/corsHandler.ts
 import { NextRequest, NextResponse } from "next/server";
 
-const allowedOrigins =
-	process.env.NODE_ENV === "production"
-		? ["https://your-production-domain.com", "https://another-allowed-domain.com"] // Thay bằng domain thực tế của bạn
-		: ["http://localhost:3000", "http://localhost:4200"]; // Domain của Angular dev server
+const allowedOrigins = process.env.NODE_ENV === "production" ? ["http://localhost:4200"] : ["http://localhost:4200"]; // Domain của Angular dev server
 
 const commonCorsHeaders = {
 	"Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
 	"Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Allow-Credentials": 'true',
+	"Access-Control-Allow-Credentials": "true",
 	"Access-Control-Max-Age": "86400", // 24 hours
 };
 
