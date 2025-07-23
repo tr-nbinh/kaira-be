@@ -3,17 +3,17 @@ import { response } from "@/lib/helpers/api-helpers";
 import { getApiI18nContext } from "@/lib/helpers/api-i18n-context";
 import { handleApiError } from "@/lib/utils/handleError";
 
-export async function GET(req: Request, context: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
 	try {
 		const { t, locale } = await getApiI18nContext(req);
 
-		const params = await context.params;
-		const id = parseInt(params.id, 10);
-		if (isNaN(id)) {
+		const { id } = await params;
+		const newId = parseInt(id, 10);
+		if (isNaN(newId)) {
 			return response({ message: t("product.item_not_found") }, 400);
 		}
 
-		const result = await pool.query("SELECT * FROM get_product_details($1, $2)", [id, locale]);
+		const result = await pool.query("SELECT * FROM get_product_details($1, $2)", [newId, locale]);
 		if (!result) {
 			return response({ message: t("product.item_not_found") }, 404);
 		}
