@@ -7,7 +7,7 @@ export interface AuthenticatedRequest extends NextRequest {
 	user?: { id: number; [key: string]: any } | null; // Mở rộng thêm các thuộc tính user nếu cần
 }
 
-const PUBLIC_API_PATHS = ["/api/banners", "/api/categories", "/api/products", "/api/testimonials", "/api/menus"];
+const PUBLIC_API_PATHS = ["/api/banners", "/api/categories", "/api/products", "/api/testimonials", "/api/menus", '/api/colors', '/api/sizes', '/api/brands'];
 const PUBLIC_API_PREFIX = "/api/auth";
 
 export async function authMiddleware(req: AuthenticatedRequest): Promise<NextResponse | null> {
