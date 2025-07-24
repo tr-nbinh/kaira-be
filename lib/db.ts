@@ -7,7 +7,9 @@ const pool = new Pool({
 	user: process.env.PG_USER,
 	password: process.env.PG_PASSWORD,
 	database: process.env.PG_DATABASE,
-	ssl: false,
+	ssl: {
+		rejectUnauthorized: false, // Cần thiết cho một số nhà cung cấp hosting nếu không có CA cert
+	},
 });
 
 export default pool;

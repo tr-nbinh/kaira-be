@@ -24,7 +24,13 @@ export async function POST(req: Request) {
 		const user = await db.user.findUnique({ where: { email } });
 		if (!user) {
 			return response({ message: t("auth.login.unauthorized") }, 401);
+        }
+
+        const isPasswordValid = await LoginComparePassword(password, user.passwordHash);
+		if (!isPasswordValid) {
+			return response({ message: t("auth.login.unauthorized") }, 401);
 		}
+
 		if (!user.isVerified) {
 			return response(
 				{
@@ -35,10 +41,6 @@ export async function POST(req: Request) {
 			);
 		}
 
-		const isPasswordValid = await LoginComparePassword(password, user.passwordHash);
-		if (!isPasswordValid) {
-			return response({ message: t("auth.login.unauthorized") }, 401);
-		}
 		// Payload for the JWT (information about the user)
 		// IMPORTANT: Do NOT include sensitive info like password_hash here.
 		const accessTokenPayload = {

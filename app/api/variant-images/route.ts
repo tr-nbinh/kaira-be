@@ -13,18 +13,12 @@ export async function POST(req: Request) {
 
 		let imageFiles = formData.getAll("images");
 
-        console.log(imageFiles);
 
 		const filesToUpload = imageFiles.filter((item) => item instanceof File) as File[];
 
 		if (filesToUpload.length === 0) {
 			return new Response(JSON.stringify({ message: "Không có tệp nào được tải lên." }), { status: 400 });
 		}
-
-		console.log(
-			"Files received:",
-			filesToUpload.map((f) => f.name)
-		);
 
 		// const uploadedImages = [];
 		// for (const imageFile of filesToUpload) {

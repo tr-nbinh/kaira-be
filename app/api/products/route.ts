@@ -69,7 +69,6 @@ export async function GET(req: Request) {
 			.filter((id) => !isNaN(id)),
 		priceRanges: priceRanges && priceRanges.length ? priceRanges : undefined,
 	};
-    console.log(priceRanges)
 	try {
 		const result = await getProducts(options);
 		return Response.json(result);

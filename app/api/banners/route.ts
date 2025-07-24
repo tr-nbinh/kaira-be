@@ -3,6 +3,7 @@ import { getLocaleFromRequest } from "@/lib/helpers/api-i18n-context";
 import { handleApiError } from "@/lib/utils/handleError";
 
 export async function GET(req: Request) {
+    console.log("--- API Route Handler for /api/banners IS BEING EXECUTED ---"); // Thêm log này
 	try {
 		const locale = getLocaleFromRequest(req);
 		const banners = await db.banner.findMany({

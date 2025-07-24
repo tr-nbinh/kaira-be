@@ -12,7 +12,6 @@ export async function POST(req: Request) {
 		if (!token || !password) {
 			return response({ message: t('auth.reset_password.required') }, 400);
 		}
-        console.log(token);
 		const user = await db.user.findUnique({
 			where: {
 				resetToken: token,

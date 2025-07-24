@@ -5,7 +5,6 @@ import { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest) {
 	const userId = getAuthenticatedUserId(req);
-	console.log(userId);
 	if (!userId) {
 		return Response.json({ message: "UserId is invalid" }, { status: 400 });
 	}
