@@ -7,10 +7,8 @@ export interface AuthenticatedRequest extends NextRequest {
 	user?: { id: number; [key: string]: any } | null; // Mở rộng thêm các thuộc tính user nếu cần
 }
 
-// Danh sách các API routes CÔNG KHAI (không cần xác thực)
-// Đảm bảo rằng PUBLIC_API_PREFIX cũng được bao gồm nếu bạn muốn tất cả API dưới prefix đó là public
-const PUBLIC_API_PATHS = ["/api/auth/login", "/api/auth/register", "/api/public/products", "/api/auth/verify"]; // Ví dụ: /api/auth/login là public
-const PUBLIC_API_PREFIX = "/api/public"; // Tất cả các API bắt đầu bằng /api/public
+const PUBLIC_API_PATHS = ["/api/banners", "/api/categories", "/api/products", "/api/testimonials", "/api/menus"];
+const PUBLIC_API_PREFIX = "/api/auth";
 
 export async function authMiddleware(req: AuthenticatedRequest): Promise<NextResponse | null> {
 	const { t } = await getApiI18nContext(req);
