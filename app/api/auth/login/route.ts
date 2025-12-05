@@ -8,6 +8,7 @@ import {
 import { db } from "@/lib/db";
 import { response, serverErrorResponse } from "@/lib/helpers/api-helpers";
 import { getApiI18nContext } from "@/lib/helpers/api-i18n-context";
+import { setCookie } from "@/lib/utils/setCookie";
 
 export async function POST(req: Request) {
 	let t;
@@ -24,9 +25,9 @@ export async function POST(req: Request) {
 		const user = await db.user.findUnique({ where: { email } });
 		if (!user) {
 			return response({ message: t("auth.login.unauthorized") }, 401);
-        }
+		}
 
-        const isPasswordValid = await LoginComparePassword(password, user.passwordHash);
+		const isPasswordValid = await LoginComparePassword(password, user.passwordHash);
 		if (!isPasswordValid) {
 			return response({ message: t("auth.login.unauthorized") }, 401);
 		}
@@ -62,6 +63,11 @@ export async function POST(req: Request) {
 			},
 		});
 
+		await setCookie({
+			name: "rememberMe",
+			value: rememberMe ? "1" : "0",
+			maxAge: rememberMe ? 7 * 24 * 60 * 60 : undefined,
+		});
 		await setRefreshTokenCookie(refreshToken, rememberMe);
 
 		const { passwordHash, refreshTokenHash, ...userWithoutHash } = user; // Destructure to remove password_hash

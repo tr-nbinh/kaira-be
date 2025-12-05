@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { JWTPayload, jwtVerify, SignJWT, type JWTVerifyResult } from "jose";
-import { cookies } from 'next/headers';
+import { cookies } from "next/headers";
 import { v4 as uuidv4 } from "uuid";
 
 export interface DecodedToken {
@@ -59,7 +59,7 @@ export async function verifyToken(token: string): Promise<DecodedToken | null> {
 
 	try {
 		const secretKey = new TextEncoder().encode(jwtSecret);
-		const { payload } = (await jwtVerify(token, secretKey, {})) as JWTVerifyResult<DecodedToken>;
+		const { payload } = (await jwtVerify(token, secretKey)) as JWTVerifyResult<DecodedToken>;
 		return payload;
 	} catch (error) {
 		console.error("Lỗi xác thực token:", error);
@@ -70,14 +70,14 @@ export async function verifyToken(token: string): Promise<DecodedToken | null> {
 export const setRefreshTokenCookie = async (token: string, rememberMe: boolean) => {
 	const REFRESH_TOKEN_EXPIRATION_DAYS = 7; // Hoặc lấy từ biến môi trường
 	const MAX_AGE = rememberMe ? REFRESH_TOKEN_EXPIRATION_DAYS * 24 * 60 * 60 : undefined; // 0 để cookie biến mất khi đóng trình duyệt nếu không remember
-    const cookieStore = await cookies();
+	const cookieStore = await cookies();
 	cookieStore.set({
-		name: 'refreshToken',
+		name: "refreshToken",
 		value: token,
 		httpOnly: true,
 		secure: false, // bắt buộc khi dùng SameSite=None hoặc trong production
-		path: '/',
-		sameSite: 'lax', // hoặc 'strict' hoặc 'none' nếu dùng cross-site
+		path: "/",
+		sameSite: "lax", // hoặc 'strict' hoặc 'none' nếu dùng cross-site
 		maxAge: MAX_AGE,
 	});
 };
@@ -85,16 +85,16 @@ export const setRefreshTokenCookie = async (token: string, rememberMe: boolean) 
 export const clearRefreshTokenCookie = async () => {
 	const cookieStore = await cookies();
 	cookieStore.set({
-		name: 'refreshToken',
-		value: '',
+		name: "refreshToken",
+		value: "",
 		httpOnly: true,
 		secure: false, // bắt buộc khi dùng SameSite=None hoặc trong production
-		path: '/',
-		sameSite: 'lax', // hoặc 'strict' hoặc 'none' nếu dùng cross-site
+		path: "/",
+		sameSite: "lax", // hoặc 'strict' hoặc 'none' nếu dùng cross-site
 		maxAge: 0,
 	});
 };
 
 export const generateToken = (): string => {
-    return crypto.randomUUID();
-}
+	return crypto.randomUUID();
+};

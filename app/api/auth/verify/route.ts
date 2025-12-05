@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { handleApiError } from "@/lib/utils/handleError";
 
 export async function GET(req: Request) {
-	const angularBaseUrl = "http://localhost:4200/auth";
+	const angularBaseUrl = `${process.env.FRONTEND_URL}/auth`;
 	const { searchParams } = new URL(req.url);
 	const token = searchParams.get("token");
 

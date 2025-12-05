@@ -1,5 +1,5 @@
 import { PaginatedResponse } from "@/models/paginatedResponse.model";
-import pool from "../db";
+import pool, { db } from "../db";
 import { GetProductsOptions, ProductResponse } from "@/models/product.model";
 
 function buildProductQuery(options: GetProductsOptions) {
@@ -86,7 +86,7 @@ function buildProductQuery(options: GetProductsOptions) {
 
 	// Price filter (multiple ranges)
 	const priceRangeConditions: string[] = [];
-    const priceQuery = `EXISTS (SELECT 1 FROM jsonb_array_elements(variants) AS v WHERE`;
+	const priceQuery = `EXISTS (SELECT 1 FROM jsonb_array_elements(variants) AS v WHERE`;
 	priceRanges.length &&
 		priceRanges.forEach((range) => {
 			if (typeof range.min === "number" && typeof range.max === "number") {
@@ -139,7 +139,10 @@ function buildProductQuery(options: GetProductsOptions) {
 	return { query: finalQueryText, values, countQuery: countQueryText, countValues };
 }
 
-export async function getProducts(options: GetProductsOptions = {}): Promise<PaginatedResponse<ProductResponse>> {
+export async function getProducts(
+	options: GetProductsOptions = {},
+	userId?: number
+): Promise<PaginatedResponse<ProductResponse>> {
 	const { query: dataQuery, values: dataValues, countQuery, countValues } = buildProductQuery(options);
 
 	try {
@@ -147,9 +150,26 @@ export async function getProducts(options: GetProductsOptions = {}): Promise<Pag
 		const totalCount = parseInt(countResult.rows[0].count, 10);
 
 		const productsResult = await pool.query(dataQuery, dataValues);
+		let productsWithFavorite = productsResult.rows;
+		if (userId) {
+			const wishlistItems = await db.wishlistItem.findMany({
+				where: { wishlist: { userId } },
+				select: { variantId: true },
+			});
 
+			const favoriteVariants = new Set(wishlistItems.map((i) => i.variantId));
+			if (favoriteVariants.size) {
+				productsWithFavorite = productsWithFavorite.map((product) => ({
+					...product,
+					variants: product.variants.map((variant: any) => ({
+						...variant,
+						isFavorite: favoriteVariants.has(variant.id),
+					})),
+				}));
+			}
+		}
 		return {
-			data: productsResult.rows,
+			data: productsWithFavorite,
 			totalCount,
 			limit: options.limit || 10,
 			page: options.page || 1,

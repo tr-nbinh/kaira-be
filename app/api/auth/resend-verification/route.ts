@@ -39,7 +39,7 @@ export async function POST(req: Request) {
 			to: email,
 			subject: t("auth.email.subject"),
 			html: t("auth.email.html", {
-				link: `http://localhost:3000/api/auth/verify?token=${verificationToken}`,
+				link: `${process.env.BACKEND_URL}/api/auth/verify?token=${verificationToken}`,
 			}),
 		};
 		await sendEmail(mailOptions);

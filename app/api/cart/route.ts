@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
 		const { t, locale } = await getApiI18nContext(req);
 
 		const userId = getAuthenticatedUserId(req);
+        console.log(userId);
 		if (!userId) {
 			return response({ message: t("auth.unauthorized") }, 401);
 		}

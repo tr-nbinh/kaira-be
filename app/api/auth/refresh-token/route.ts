@@ -10,6 +10,7 @@ import { db } from "@/lib/db";
 import { response } from "@/lib/helpers/api-helpers";
 import { getApiI18nContext } from "@/lib/helpers/api-i18n-context";
 import { handleApiError } from "@/lib/utils/handleError";
+import { setCookie } from "@/lib/utils/setCookie";
 import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
@@ -18,12 +19,13 @@ export async function POST(req: Request) {
 
 		const cookieStore = await cookies();
 		const refreshTokenCookie = cookieStore.get("refreshToken");
+		const rememberMeCookie = cookieStore.get("rememberMe");
 
 		if (!refreshTokenCookie || !refreshTokenCookie.value) {
 			return response({ message: t("auth.refresh.token_not_found") }, 401);
 		}
 		const refreshToken = refreshTokenCookie.value;
-
+		const rememberMe = rememberMeCookie?.value === "1";
 		// Find the user by comparing the provided refresh token with the hashed one in the database
 		// Ensure to also check if the refresh token has expired
 		const users = await db.user.findMany({
@@ -67,7 +69,12 @@ export async function POST(req: Request) {
 			},
 		});
 
-		await setRefreshTokenCookie(newRefreshToken, true);
+		await setCookie({
+			name: "rememberMe",
+			value: rememberMe ? "1" : "0",
+			maxAge: rememberMe ? 7 * 24 * 60 * 60 : undefined,
+		});
+		await setRefreshTokenCookie(newRefreshToken, rememberMe);
 
 		return response({ message: t("auth.refresh.success"), data: newAccessToken }, 200);
 	} catch (error) {

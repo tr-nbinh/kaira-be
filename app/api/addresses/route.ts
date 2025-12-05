@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
 			where: { userId: userId },
             select: {
                 id: true,
+                districtCode: true,
                 receiverName: true,
                 provinceCode: true,
                 wardCode: true,

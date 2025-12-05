@@ -1,10 +1,12 @@
 import { db } from "@/lib/db";
 import { getProducts } from "@/lib/services/productService";
+import { getAuthenticatedUserId } from "@/lib/utils/auth-util";
 import { handleApiError } from "@/lib/utils/handleError";
 import { GetProductsOptions } from "@/models/product.model";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
+	const userId = getAuthenticatedUserId(req);
 	const { searchParams } = new URL(req.url);
 	// Parse price filter: price=<20, price=40-60, price=>100, price=20, etc.
 	// Parse multiple price ranges: /api/products?price=<20&price=40-60
@@ -70,7 +72,7 @@ export async function GET(req: Request) {
 		priceRanges: priceRanges && priceRanges.length ? priceRanges : undefined,
 	};
 	try {
-		const result = await getProducts(options);
+		const result = await getProducts(options, userId);
 		return Response.json(result);
 	} catch (err) {
 		return handleApiError(err);

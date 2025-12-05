@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 				},
 			});
 			if (!newOrder) {
-				return { error: t("order.failed"), status: 400 };
+				return response({ message: t("order.failed") }, 400);
 			}
 
 			const orderItemsData = await orderItems.map((item: any) => ({
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
 				where: { userId: userId },
 			});
 			if (!cart) {
-				return { error: t("cart.cart_not_found"), status: 400 };
+				return response({ message: t("cart.cart_not_found") }, 400);
 			}
 
 			const updateStock = Promise.all(
@@ -64,17 +64,14 @@ export async function POST(req: NextRequest) {
 			const deleteFromCart = tx.cartItem.deleteMany({
 				where: {
 					cartId: cart.id,
-					variantId: { in: orderItems.map((i: any) => i.variantId) },
 				},
 			});
 			await Promise.all([updateStock, deleteFromCart]);
+
+			return newOrder;
 		});
 
-		if (result?.error) {
-			return response({ message: t("order.failed") }, result.status);
-		}
-
-		return response({ message: t("order.success") });
+		return response({ data: result, message: "" }, 201);
 	} catch (error) {
 		return handleApiError(error);
 	}

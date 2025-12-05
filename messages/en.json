@@ -73,6 +73,14 @@
         "update_success": "The product has been updated in your cart.",
         "add_success": "The product has been added to your cart."
     },
+    "wishlist": {
+        "required": "Please provide all required information.",
+        "item_not_found": "The product is currently unavailable.",
+        "wishlist_not_found": "Your wishlist does not exist.",
+        "delete_success": "The product has been removed from your wishlist.",
+        "add_success": "The product has been updated in your wishlist.",
+        "item_existed": "The product has been added to your wishlish."
+    },
     "order": {
         "invalid": "Invalid order.",
         "failed": "Failed to create the order.",

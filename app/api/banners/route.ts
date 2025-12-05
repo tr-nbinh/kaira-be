@@ -26,7 +26,7 @@ export async function GET(req: Request) {
 			},
 		});
 
-		const formattedBanners = banners.map((banner) => {
+		const formattedBanners = banners.map((banner: any) => {
 			const { translations, ...newBanner } = banner;
 			return { ...newBanner, ...translations[0] };
 		});

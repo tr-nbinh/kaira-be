@@ -10,8 +10,6 @@ export interface AuthenticatedRequest extends NextRequest {
 const PUBLIC_API_PATTERNS = [
 	/^\/api\/banners$/,
 	/^\/api\/categories$/,
-	/^\/api\/products$/, // Khớp chính xác /api/products
-	/^\/api\/products\/[^\/]+$/, // Khớp /api/products/BẤT_KỲ_GÌ (ví dụ: /api/products/16, /api/products/abc)
 	/^\/api\/testimonials$/,
 	/^\/api\/menus$/,
 	/^\/api\/colors$/,
