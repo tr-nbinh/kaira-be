@@ -15,6 +15,7 @@ const PUBLIC_API_PATTERNS = [
 	/^\/api\/colors$/,
 	/^\/api\/sizes$/,
 	/^\/api\/brands$/,
+	/^\/api\/product(\/.*)?$/,
 ];
 const PUBLIC_API_PREFIX = "/api/auth";
 
@@ -22,7 +23,8 @@ export async function authMiddleware(req: AuthenticatedRequest): Promise<NextRes
 	const { t } = await getApiI18nContext(req);
 
 	const pathname = req.nextUrl.pathname;
-    const isPublicApiPath = PUBLIC_API_PATTERNS.some(pattern => pattern.test(pathname)) || pathname.startsWith(PUBLIC_API_PREFIX);
+	const isPublicApiPath =
+		PUBLIC_API_PATTERNS.some((pattern) => pattern.test(pathname)) || pathname.startsWith(PUBLIC_API_PREFIX);
 	if (isPublicApiPath) {
 		return null; // Trả về null để chỉ ra rằng không có lỗi và request có thể tiếp tục
 	}
