@@ -50,4 +50,5 @@ export default async function middleware(req: NextRequest) {
 // Cấu hình Matcher để áp dụng middleware cho TẤT CẢ các API routes
 export const config = {
 	matcher: ["/api/:path*"],
+    runtime: 'nodejs'
 };
