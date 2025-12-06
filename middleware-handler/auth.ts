@@ -15,7 +15,7 @@ const PUBLIC_API_PATTERNS = [
 	/^\/api\/colors$/,
 	/^\/api\/sizes$/,
 	/^\/api\/brands$/,
-	/^\/api\/product(\/.*)?$/,
+	/^\/api\/products(\/.*)?$/,
 ];
 const PUBLIC_API_PREFIX = "/api/auth";
 
