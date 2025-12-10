@@ -14,7 +14,6 @@ export interface PriceRange {
 }
 
 export interface GetProductsOptions {
-	lang?: string;
 	categoryIds?: number[];
 	colorIds?: number[];
 	sizeIds?: number[];

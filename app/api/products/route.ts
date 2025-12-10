@@ -1,12 +1,14 @@
 import { db } from "@/lib/db";
+import { getLocaleFromRequest } from "@/lib/helpers/api-i18n-context";
 import { getProducts } from "@/lib/services/productService";
 import { getAuthenticatedUserId } from "@/lib/utils/auth-util";
 import { handleApiError } from "@/lib/utils/handleError";
 import { GetProductsOptions } from "@/models/product.model";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest) {
 	const userId = getAuthenticatedUserId(req);
+	const locale = getLocaleFromRequest(req);
 	const { searchParams } = new URL(req.url);
 	// Parse price filter: price=<20, price=40-60, price=>100, price=20, etc.
 	// Parse multiple price ranges: /api/products?price=<20&price=40-60
@@ -28,7 +30,6 @@ export async function GET(req: NextRequest) {
 		.filter((r) => r.min !== undefined || r.max !== undefined);
 
 	const options: GetProductsOptions = {
-		lang: searchParams.get("lang") || undefined,
 		page: searchParams.get("page") ? parseInt(searchParams.get("page") as string, 10) : undefined,
 		limit: searchParams.get("limit") ? parseInt(searchParams.get("limit") as string, 10) : undefined,
 		bestSeller:
@@ -72,7 +73,7 @@ export async function GET(req: NextRequest) {
 		priceRanges: priceRanges && priceRanges.length ? priceRanges : undefined,
 	};
 	try {
-		const result = await getProducts(options, userId);
+		const result = await getProducts(options, locale, userId);
 		return Response.json(result);
 	} catch (err) {
 		return handleApiError(err);

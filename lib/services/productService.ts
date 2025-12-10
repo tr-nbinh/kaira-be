@@ -2,9 +2,8 @@ import { PaginatedResponse } from "@/models/paginatedResponse.model";
 import pool, { db } from "../db";
 import { GetProductsOptions, ProductResponse } from "@/models/product.model";
 
-function buildProductQuery(options: GetProductsOptions) {
+function buildProductQuery(options: GetProductsOptions, lang: string) {
 	const {
-		lang = "en",
 		categoryIds = [],
 		colorIds = [],
 		sizeIds = [],
@@ -32,7 +31,7 @@ function buildProductQuery(options: GetProductsOptions) {
             pfv.brand_id`;
 
 	let baseQuery = `
-		FROM product_full_view pfv`;
+		FROM product_full_view('${lang}') pfv`;
 
 	const values: any[] = [];
 	const conditions: string[] = [];
@@ -109,9 +108,7 @@ function buildProductQuery(options: GetProductsOptions) {
 
 	let whereClause = "";
 	if (conditions.length) {
-		whereClause = `WHERE (pfv.id = 16 OR pfv.id = 17) AND ${conditions.join(" AND ")}`;
-	} else {
-		whereClause = `WHERE (pfv.id = 16 OR pfv.id = 17)`;
+		whereClause = `WHERE ${conditions.join(" AND ")}`;
 	}
 
 	const orderByClause = `ORDER BY pfv.id ASC`;
@@ -141,9 +138,10 @@ function buildProductQuery(options: GetProductsOptions) {
 
 export async function getProducts(
 	options: GetProductsOptions = {},
+    lang: string, 
 	userId?: number
 ): Promise<PaginatedResponse<ProductResponse>> {
-	const { query: dataQuery, values: dataValues, countQuery, countValues } = buildProductQuery(options);
+	const { query: dataQuery, values: dataValues, countQuery, countValues } = buildProductQuery(options, lang);
 
 	try {
 		const countResult = await pool.query(countQuery, countValues);

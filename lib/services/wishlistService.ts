@@ -33,7 +33,7 @@ export async function getWishlistItems(lang: string = "en", userId: number) {
         JOIN ct_en ct ON ct.color_id = co.color_id
         LEFT JOIN st_en st ON st.size_id = pv.size_id
         JOIN variant_images vi ON vi.variant_id = pv.variant_id
-        WHERE w.user_id = ${userId} AND vi.is_main_image = true
+        WHERE w.user_id = ${userId}
         `;
 
 		return wishlistItems;

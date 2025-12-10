@@ -27,11 +27,11 @@ export async function POST(req: Request) {
 			where: { email },
 			data: {
 				resetToken: resetToken,
-				refreshTokenExpiresAt: expiration,
+				resetTokenExpire: expiration,
 			},
 		});
 
-		const resetLink = `http://localhost:4200/auth/reset-password?token=${resetToken}`;
+		const resetLink = `${process.env.FRONTEND_URL}/auth/reset-password?token=${resetToken}`;
 		const htmlContent = t("auth.reset_password.html", { link: resetLink });
 		const mailOptions = {
 			to: email,
