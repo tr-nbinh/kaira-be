@@ -7,8 +7,6 @@ export interface DecodedToken {
 	id: number;
 	username: string;
 	email: string;
-	iat: number;
-	exp: number;
 }
 
 const SALT_ROUNDS = 10;
@@ -49,22 +47,10 @@ export async function generateAccessToken(payload: JWTPayload) {
 		.sign(secretKey); // Ký token bằng secret key;
 }
 
-export async function verifyToken(token: string): Promise<DecodedToken | null> {
-	const jwtSecret = process.env.JWT_SECRET;
-
-	if (!jwtSecret) {
-		console.error("JWT_SECRET is not defined for token verification.");
-		return null;
-	}
-
-	try {
-		const secretKey = new TextEncoder().encode(jwtSecret);
-		const { payload } = (await jwtVerify(token, secretKey)) as JWTVerifyResult<DecodedToken>;
-		return payload;
-	} catch (error) {
-		console.error("Lỗi xác thực token:", error);
-		return null;
-	}
+export async function verifyToken(token: string): Promise<DecodedToken> {
+	const secretKey = new TextEncoder().encode(process.env.JWT_SECRET);
+	const { payload } = (await jwtVerify(token, secretKey)) as JWTVerifyResult<DecodedToken>;
+	return payload;
 }
 
 export const setRefreshTokenCookie = async (token: string, rememberMe: boolean) => {

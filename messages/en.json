@@ -74,12 +74,21 @@
         "add_success": "The product has been added to your cart."
     },
     "wishlist": {
-        "required": "Please provide all required information.",
-        "item_not_found": "The product is currently unavailable.",
-        "wishlist_not_found": "Your wishlist does not exist.",
-        "delete_success": "The product has been removed from your wishlist.",
-        "add_success": "The product has been updated in your wishlist.",
-        "item_existed": "The product has been added to your wishlish."
+        "success": {
+            "added": "Product added to your wishlist.",
+            "removed": "Product removed from your wishlist.",
+            "cleared": "All products cleared from wishlist."
+        },
+        "error": {
+            "unauthorized": "Please login to save this product.",
+            "not_found": "Product not found or has been deleted.",
+            "limit_reached": "Wishlist limit reached (max 50 items).",
+            "server_error": "Could not update wishlist. Please try again later.",
+            "invalid_variant": "Invalid product variant."
+        },
+        "info": {
+            "already_in": "This product is already in your wishlist."
+        }
     },
     "order": {
         "invalid": "Invalid order.",
@@ -88,5 +97,51 @@
     },
     "product": {
         "item_not_found": "The product does not exist"
+    },
+    "validation": {
+        "required": "{{field}} is required",
+        "invalid": "Invalid value",
+        "invalid_type": "{{field}} has an invalid type",
+        "string": {
+            "min": "{{field}} must be at least {{min}} characters",
+            "max": "{{field}} must not exceed {{max}} characters",
+            "email": "Invalid email address",
+            "url": "Invalid URL",
+            "uuid": "must be a valid UUID",
+            "regex": "{{field}} format is invalid"
+        },
+        "number": {
+            "is_number": "must be a number",
+            "min": "{{field}} must be greater than or equal to {{min}}",
+            "max": "{{field}} must be less than or equal to {{max}}",
+            "positive": "{{field}} must be a positive number",
+            "negative": "{{field}} must be a negative number",
+            "integer": "{{field}} must be an integer"
+        },
+        "array": {
+            "min": "At least {{min}} {{field}} required",
+            "max": "Must not exceed {{max}} {{field}}",
+            "nonempty": "{{field}} cannot be empty"
+        },
+        "auth": {
+            "password_min": "Password must be at least {{min}} characters",
+            "password_pattern": "Password must include uppercase, lowercase and a number",
+            "password_confirm": "Password confirmation does not match",
+            "username_taken": "Username already exists",
+            "email_taken": "Email already exists"
+        },
+        "product": {
+            "out_of_stock": "Product is out of stock",
+            "max_quantity": "You can only purchase up to {{stock}} items",
+            "invalid_variant": "Invalid product variant",
+            "not_found": "Product not found"
+        },
+        "common": {
+            "not_found": "Data not found",
+            "unauthorized": "You need to log in to perform this action",
+            "forbidden": "You do not have permission to perform this action",
+            "conflict": "Data already exists",
+            "server_error": "Something went wrong, please try again"
+        }
     }
 }

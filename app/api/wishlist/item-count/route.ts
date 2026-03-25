@@ -1,33 +1,23 @@
-import { db } from "@/lib/db";
-import { response } from "@/lib/helpers/api-helpers";
 import { getApiI18nContext } from "@/lib/helpers/api-i18n-context";
+import { wishlistService } from "@/lib/services/wishlist.service";
+import { ApiError } from "@/lib/utils/api-error";
+import { sendSuccess } from "@/lib/utils/api-response";
 import { getAuthenticatedUserId } from "@/lib/utils/auth-util";
+import { handleApiError } from "@/lib/utils/handleError";
 import { NextRequest } from "next/server";
 
-// Get total items in cart
+// Get user's items in wishlists
 export async function GET(req: NextRequest) {
 	try {
 		const { t } = await getApiI18nContext(req);
-
 		const userId = getAuthenticatedUserId(req);
 		if (!userId) {
-			return response({ message: t("auth.unauthorized") }, 401);
+			throw new ApiError(t("auth.unauthorized"), 401);
 		}
 
-		const wishlist = await db.wishlist.findFirst({
-			where: { userId: userId },
-		});
-		if (!wishlist) {
-			return response({ message: t("wishlist.wishlist_not_found"), data: 0 }, 200);
-		}
-
-		const wishlistItemCount = await db.wishlistItem.count({
-			where: { wishlistId: wishlist.id },
-		});
-
-		return response({ message: "success", data: wishlistItemCount });
-	} catch (error: any) {
-		console.error("Lỗi khi đếm itemCount:", error);
-		return Response.json({ success: false, message: "Lỗi server" }, { status: 500 });
+		const data = await wishlistService.getWishlistCount(userId);
+		return sendSuccess(data, "Get wishlist count successfully");
+	} catch (error) {
+		return handleApiError(error);
 	}
 }

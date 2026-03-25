@@ -1,79 +1,52 @@
-import { db } from "@/lib/db";
-import { response } from "@/lib/helpers/api-helpers";
 import { getApiI18nContext } from "@/lib/helpers/api-i18n-context";
+import { cartService } from "@/lib/services/cart.service";
+import { ApiError } from "@/lib/utils/api-error";
+import { sendSuccess } from "@/lib/utils/api-response";
 import { getAuthenticatedUserId } from "@/lib/utils/auth-util";
 import { handleApiError } from "@/lib/utils/handleError";
+import { deleteVariantSchema, updateQuantitySchema } from "@/lib/validations/cart.validation";
 import { NextRequest } from "next/server";
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ variantId: string }> }) {
+interface RouteParams {
+	variantId: string;
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
 	try {
-		const { t } = await getApiI18nContext(req);
+		const { t, locale } = await getApiI18nContext(req);
 
 		const userId = getAuthenticatedUserId(req);
 		if (!userId) {
-			return response({ message: t("auth.unauthorized") }, 401);
+			throw new ApiError(t("auth.unauthorized"), 401);
 		}
-        const { variantId } = await params
-		const newVariantId = parseInt(variantId);
-		if (!newVariantId) {
-			return response({ message: t("cart.item_not_found") }, 400);
-		}
+		const { variantId } = await params;
+		console.log(variantId);
+		const validatedVariantId = deleteVariantSchema.parse({ variantId });
 
-		const cart = await db.cart.findUnique({
-			where: { userId: userId },
-		});
-		if (!cart) {
-			return response({ message: t("cart.cart_not_found") }, 404);
-		}
-
-		await db.cartItem.delete({
-			where: { cartId_variantId: { cartId: cart.id, variantId: newVariantId } },
-		});
-
-		const totalItems = await db.cartItem.count({
-			where: { cartId: cart.id },
-		});
-
-		return response({ message: t("cart.delete_success"), data: totalItems });
+		const data = await cartService.deleteItem(userId, validatedVariantId.variantId, locale);
+		return sendSuccess(data, t("delete_success"));
 	} catch (err) {
-		handleApiError(err);
+		return handleApiError(err);
 	}
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ variantId: string }> }) {
+// Update quantity
+export async function PATCH(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
 	try {
-		const { t } = await getApiI18nContext(req);
+		const { t, locale } = await getApiI18nContext(req);
 
 		const userId = getAuthenticatedUserId(req);
 		if (!userId) {
-			return response({ message: t("auth.unauthorized") }, 401);
+			throw new ApiError(t("auth.unauthorized"), 401);
 		}
 
 		const { variantId } = await params;
-		const newVariantId = parseInt(variantId);
-		if (!newVariantId) {
-			return response({ message: t("cart.item_not_found") }, 400);
-		}
-
 		const { quantity } = await req.json();
-		if (!quantity || typeof quantity !== "number" || quantity < 1) {
-			return response({ message: t("cart.amount_invalid") }, 400);
-		}
+		const validatedData = updateQuantitySchema.parse({ variantId, quantity });
 
-		const cart = await db.cart.findFirst({
-			where: { userId: userId },
-		});
-		if (!cart) {
-			return response({ message: t("cart.cart_not_found") }, 404);
-		}
-
-		await db.cartItem.update({
-			where: { cartId_variantId: { cartId: cart.id, variantId: newVariantId } },
-			data: { quantity },
-		});
-
-		return response({ message: t("cart.update_success") });
+		const data = await cartService.updateQuantity(userId, validatedData.variantId, validatedData.quantity, locale);
+		return sendSuccess(data, t("cart.update_success"));
 	} catch (err) {
-		handleApiError(err);
+		return handleApiError(err);
 	}
 }

@@ -1,7 +1,8 @@
 // middleware-handlers/corsHandler.ts
 import { NextRequest, NextResponse } from "next/server";
 
-const allowedOrigins = process.env.NODE_ENV === "production" ? ["https://tnbshopworld.netlify.app"] : ["http://localhost:4200"]; // Domain của Angular dev server
+const allowedOrigins =
+	process.env.NODE_ENV === "production" ? ["https://tnbshopworld.netlify.app"] : ["http://localhost:4200"]; // Domain của Angular dev server
 
 const commonCorsHeaders = {
 	"Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
@@ -10,7 +11,7 @@ const commonCorsHeaders = {
 	"Access-Control-Max-Age": "86400", // 24 hours
 };
 
-export function handleCors(req: NextRequest): NextResponse | null {
+export function handleCors(req: NextRequest) {
 	const origin = req.headers.get("Origin");
 
 	// Nếu không phải API request hoặc không có Origin, bỏ qua CORS
