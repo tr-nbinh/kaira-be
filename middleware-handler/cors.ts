@@ -2,7 +2,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const allowedOrigins =
-	process.env.NODE_ENV === "production" ? ["https://tnbshopworld.netlify.app"] : ["http://localhost:4200"]; // Domain của Angular dev server
+	process.env.NODE_ENV === "production"
+		? ["https://tnbshopworld.netlify.app", "http://localhost:4200"]
+		: ["http://localhost:4200"]; // Domain của Angular dev server
 
 const commonCorsHeaders = {
 	"Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
