@@ -1,7 +1,6 @@
 import bcrypt from "bcryptjs";
 import { JWTPayload, jwtVerify, SignJWT, type JWTVerifyResult } from "jose";
 import { cookies } from "next/headers";
-import { v4 as uuidv4 } from "uuid";
 import { ApiError } from "./utils/api-error";
 
 export interface DecodedToken {
@@ -50,7 +49,7 @@ export async function verifyToken(token: string): Promise<DecodedToken> {
 	return payload;
 }
 
-export const setRefreshTokenCookie = async (token: string, maxAge: number) => {
+export const setRefreshTokenCookie = async (token: string, maxAge: number | undefined) => {
 	const cookieStore = await cookies();
 	cookieStore.set({
 		name: "refresh_token",

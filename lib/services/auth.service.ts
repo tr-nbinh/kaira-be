@@ -218,7 +218,7 @@ export const authService = {
 			},
 		});
 
-		const maxAge = rememberMe ? 7 * 24 * 60 * 60 : 0; // 0 để cookie biến mất khi đóng trình duyệt nếu không remember
+		const maxAge = rememberMe ? 7 * 24 * 60 * 60 : undefined;
 		await setRefreshTokenCookie(refreshToken, maxAge);
 
 		return { accessToken };
@@ -266,7 +266,7 @@ export const authService = {
 			},
 		});
 
-		const maxAge = !!token.remember_me ? 7 * 24 * 60 * 60 : 0; // 0 để cookie biến mất khi đóng trình duyệt nếu không remember
+		const maxAge = !!token.remember_me ? 7 * 24 * 60 * 60 : undefined; // 0 để cookie biến mất khi đóng trình duyệt nếu không remember
 		await setRefreshTokenCookie(newRefreshToken, maxAge);
 
 		return { accessToken };
