@@ -9,7 +9,7 @@ const PUBLIC_API_PATTERNS = [
 	/^\/api\/menus$/,
 	/^\/api\/brands$/,
 	/^\/api\/attributes(\/.*|\?.*)?$/,
-	/^\/api\/blog(\/.*|\?.*)?$/,
+	/^\/api\/blogs(\/.*|\?.*)?$/,
 	/^\/api\/exchange-rate(\/.*|\?.*)?$/,
 	/^\/api\/products(\/.*|\?.*)?$/,
 ];
