@@ -23,7 +23,9 @@ export const ProductFilterSchema = z.object({
 		.string()
 		.optional()
 		.transform((val) => Math.min(100, parseInt(val || "10"))),
-
+	bestSeller: z.coerce.boolean().optional(),
+	bestReviewed: z.coerce.boolean().optional(),
+	newArrival: z.coerce.boolean().optional(),
 	// Các bộ lọc mảng (Colors, Sizes, v.v.)
 	colors: commaSeparatedNumericArray,
 	sizes: commaSeparatedNumericArray,
