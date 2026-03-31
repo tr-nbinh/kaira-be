@@ -58,10 +58,9 @@ export const setRefreshTokenCookie = async (token: string, rememberMe: boolean) 
 		name: "refresh_token",
 		value: token,
 		httpOnly: true,
-		// secure: process.env.NODE_ENV == "production",
-		secure: false,
+		secure: process.env.NODE_ENV == "production",
 		path: "/",
-		sameSite: "lax", // hoặc 'strict' hoặc 'none' nếu dùng cross-site
+		sameSite: "none", // hoặc 'strict' hoặc 'none' nếu dùng cross-site
 		maxAge: MAX_AGE,
 	});
 };
