@@ -1,5 +1,8 @@
 import { db } from "@/lib/db";
+import { authService } from "@/lib/services/auth.service";
+import { sendSuccess } from "@/lib/utils/api-response";
 import { handleApiError } from "@/lib/utils/handleError";
+import { VerifySchema } from "@/lib/validations/auth.validation";
 
 export async function GET(req: Request) {
 	const angularBaseUrl = `${process.env.FRONTEND_URL}/auth`;
@@ -32,6 +35,18 @@ export async function GET(req: Request) {
 		});
 
 		return Response.redirect(new URL(`${angularBaseUrl}/pending-verify?status=success`));
+	} catch (error) {
+		return handleApiError(error);
+	}
+}
+
+export async function POST(req: Request) {
+	try {
+		const { token } = await req.json();
+		console.log(token);
+		const validatedData = VerifySchema.parse({ token });
+		const data = await authService.verifyEmail(validatedData.token);
+		return sendSuccess(data, "Verify your email successfully");
 	} catch (error) {
 		return handleApiError(error);
 	}

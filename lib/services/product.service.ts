@@ -1,11 +1,38 @@
 import { getVndToUsdRate } from "../currency";
 import { db } from "../db";
 import { ApiError } from "../utils/api-error";
+import { ProductFilter } from "../validations/product.validation";
+import { product_status } from "@prisma/client";
 
 export const productService = {
-	async getProducts(locale: string, params: any, userId?: number) {
-		const products = await db.products.findMany({
-			where: { status: "active" },
+	async getProducts(locale: string, params: ProductFilter, userId?: number) {
+		const { colors, minPrice, maxPrice } = params;
+		const variantWhereInput = {
+			AND: [
+				// Lọc theo màu sắc
+				...(colors.length > 0
+					? [
+							{
+								OR: colors.map((id) => ({
+									option_value_ids: { array_contains: id },
+								})),
+							},
+						]
+					: []),
+				// Lọc theo giá
+				...(minPrice !== undefined ? [{ price: { gte: minPrice } }] : []),
+				...(maxPrice !== undefined ? [{ price: { lte: maxPrice } }] : []),
+			],
+		};
+
+		const productsPromise = db.products.findMany({
+			where: {
+				status: product_status.active,
+				product_variants: { some: variantWhereInput },
+			},
+			skip: (params.page - 1) * params.limit,
+			take: params.limit,
+			orderBy: { created_at: "desc" },
 			select: {
 				id: true,
 				product_translations: {
@@ -17,7 +44,9 @@ export const productService = {
 						content: true,
 					},
 				},
+
 				product_variants: {
+					where: variantWhereInput,
 					select: {
 						id: true,
 						sku: true,
@@ -43,6 +72,12 @@ export const productService = {
 				},
 			},
 		});
+		const [products, totalItems] = await Promise.all([
+			productsPromise,
+			db.products.count({
+				where: { status: product_status.active, product_variants: { some: variantWhereInput } },
+			}),
+		]);
 		if (!products.length) return [];
 
 		const usdRate = await getVndToUsdRate();
@@ -111,7 +146,15 @@ export const productService = {
 			};
 		});
 
-		return result;
+		return {
+			data: result,
+			meta: {
+				limit: params.limit,
+				page: params.page,
+				totalCount: totalItems,
+				totalPages: Math.ceil(totalItems / params.limit),
+			},
+		};
 	},
 
 	async getProductById(id: string, locale: string, userId?: number) {
@@ -154,6 +197,7 @@ export const productService = {
 				},
 			},
 		});
+
 		if (!product) {
 			throw new ApiError("Product not found", 404);
 		}

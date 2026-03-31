@@ -48,6 +48,7 @@
             "new_token_issued": "Token mới đã được cấp.",
             "token_not_found": "Không thấy refresh token trong cookie",
             "invalid_token": "Token không hợp lệ.",
+            "token_expired": "Token đã hết hạn",
             "expired": "Phiên đăng nhập đã hết hạn.",
             "user_not_found": "Không tìm thấy người dùng tương ứng với token.",
             "revoked": "Token đã bị thu hồi.",
@@ -62,6 +63,12 @@
             "html": "<p>Vui lòng nhấp vào đường link sau để đặt lại mật khẩu:</p><a href=\"{link}\">Đặt lại mật khẩu</a>",
             "error": "Liên kết đặt lại mật khẩu đã hết hạn. Hãy tạo mới",
             "required": "Vui lòng nhập đầy đủ thông tin"
+        },
+        "forgot_password": {
+            "success": "Liên kết đã được gửi đến email"
+        },
+        "resend_email": {
+            "too_many": "Email xác thực đã được gửi trước đó"
         }
     },
     "cart": {
@@ -93,7 +100,15 @@
     "order": {
         "invalid": "Đơn hàng không hợp lệ",
         "failed": "Tạo đơn hàng không thành công",
-        "success": "Tạo đơn hàng thành công"
+        "success": "Tạo đơn hàng thành công",
+        "address_notfound": "Không tìm thấy địa chỉ",
+        "variant_notfound": "Không tìm thấy sản phẩm",
+        "out_of_stock": "Sản phẩm này đã hết hàng",
+        "cart_not_found": "Giỏ hàng hiện không tồn tại"
+    },
+    "address": {
+        "success": "Create address successfully",
+        "update_success": "Địa chỉ đã được cập nhật"
     },
     "product": {
         "item_not_found": "Không tìm thấy sản phẩm"
@@ -142,6 +157,20 @@
             "forbidden": "Bạn không có quyền thực hiện hành động này",
             "conflict": "Dữ liệu đã tồn tại",
             "server_error": "Đã có lỗi xảy ra, vui lòng thử lại"
+        }
+    },
+    "email": {
+        "verify_email": {
+            "title": "Xác thực email của bạn",
+            "description": "Vui lòng nhấn nút bên dưới để xác thực tài khoản.",
+            "button_text": "Xác thực email",
+            "footer": "Link sẽ hết hạn sau 30 phút."
+        },
+        "reset_password": {
+            "title": "Đặt lại mật khẩu",
+            "description": "Vui lòng nhấn nút bên dưới để đặt lại mật khẩu.",
+            "button_text": "Đặt lại mật khẩu",
+            "footer": "Link sẽ hết hạn sau 30 phút."
         }
     }
 }

@@ -24,7 +24,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Rou
 		const validatedVariantId = deleteVariantSchema.parse({ variantId });
 
 		const data = await cartService.deleteItem(userId, validatedVariantId.variantId, locale);
-		return sendSuccess(data, t("delete_success"));
+		return sendSuccess(data, t("cart.delete_success"));
 	} catch (err) {
 		return handleApiError(err);
 	}

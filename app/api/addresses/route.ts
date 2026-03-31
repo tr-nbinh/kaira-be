@@ -1,79 +1,39 @@
 import { db } from "@/lib/db";
+import { getApiI18nContext } from "@/lib/helpers/api-i18n-context";
+import { addressService } from "@/lib/services/address.service";
+import { ApiError } from "@/lib/utils/api-error";
+import { sendSuccess } from "@/lib/utils/api-response";
 import { getAuthenticatedUserId } from "@/lib/utils/auth-util";
 import { handleApiError } from "@/lib/utils/handleError";
+import { AddressSchema } from "@/lib/validations/address.validation";
 import { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest) {
-	const userId = getAuthenticatedUserId(req);
-	if (!userId) {
-		return Response.json({ message: "UserId is invalid" }, { status: 400 });
-	}
-
 	try {
-		const addresses = await db.address.findMany({
-			where: { userId: userId },
-            select: {
-                id: true,
-                districtCode: true,
-                receiverName: true,
-                provinceCode: true,
-                wardCode: true,
-                street: true,
-                address: true,
-                addressExtra: true,
-                phone: true,
-                email: true,
-                isDefault: true
-            }
-		});
+		const { t } = await getApiI18nContext(req);
+		const userId = getAuthenticatedUserId(req);
+		if (!userId) {
+			throw new ApiError(t("auth.unauthorized"), 401);
+		}
 
-		return Response.json(addresses, { status: 201 });
+		const data = await addressService.getAddressByUserId(userId);
+		return sendSuccess(data, "Get addresses successfully");
 	} catch (error) {
 		return handleApiError(error);
 	}
 }
 
 export async function POST(req: NextRequest) {
-	const userId = getAuthenticatedUserId(req);
-	if (!userId) {
-		return Response.json({ message: "UserId is invalid" }, { status: 400 });
-	}
-
 	try {
+		const { t } = await getApiI18nContext(req);
+		const userId = getAuthenticatedUserId(req);
+		if (!userId) {
+			throw new ApiError(t("auth.unauthorized"), 401);
+		}
 		const addressData = await req.json();
-		if (addressData.isDefault) {
-			await db.address.updateMany({
-				where: {
-					userId: +userId,
-					isDefault: true,
-				},
-				data: {
-					isDefault: false,
-				},
-			});
-		}
-
-		const newAddress = await db.address.create({
-			data: {
-				receiverName: addressData.receiverName,
-				provinceCode: addressData.provinceCode,
-				districtCode: addressData.districtCode,
-				wardCode: addressData.wardCode,
-				address: addressData.address,
-				addressExtra: addressData.addressExtra,
-				phone: addressData.phone,
-				email: addressData.email,
-				isDefault: addressData.isDefault,
-				street: addressData.street,
-				userId: +userId,
-			},
-		});
-
-		if (!newAddress) {
-			return Response.json({ message: "Failed to create address" }, { status: 500 });
-		}
-
-		return Response.json(newAddress, { status: 201 });
+		const validatedDat = AddressSchema.parse(addressData);
+		const data = await addressService.createAddress(validatedDat, userId);
+		return sendSuccess(data, t("address.success"));
 	} catch (error) {
 		return handleApiError(error);
 	}

@@ -1,8 +1,7 @@
-import { clearRefreshTokenCookie } from "@/lib/auth";
-import { db } from "@/lib/db";
 import { response } from "@/lib/helpers/api-helpers";
 import { getApiI18nContext } from "@/lib/helpers/api-i18n-context";
-import { getAuthenticatedUserId } from "@/lib/utils/auth-util";
+import { authService } from "@/lib/services/auth.service";
+import { sendSuccess } from "@/lib/utils/api-response";
 import { handleApiError } from "@/lib/utils/handleError";
 import { cookies } from "next/headers";
 import { NextRequest } from "next/server";
@@ -10,39 +9,13 @@ import { NextRequest } from "next/server";
 export async function POST(request: NextRequest) {
 	try {
 		const { t } = await getApiI18nContext(request);
-
-		const userId = getAuthenticatedUserId(request);
-		if (!userId) {
-			await clearRefreshTokenCookie();
-			return response({ message: t("auth.logout.success") }, 200);    
+		const token = (await cookies()).get("refresh_token")?.value;
+		if (!token) {
+			return response({ message: t("auth.refresh.token_not_found") }, 401);
 		}
+		const data = await authService.logout(token);
 
-		const cookieStore = await cookies();
-		const refreshTokenCookie = cookieStore.get("refreshToken");
-		if (!refreshTokenCookie || !refreshTokenCookie.value) {
-			await clearRefreshTokenCookie();
-			return response({ message: t("auth.logout.success") }, 200);
-		}
-
-		const userToLogout = await db.user.findUnique({
-			where: { id: userId },
-			select: { id: true },
-		});
-		if (!userToLogout) {
-			await clearRefreshTokenCookie();
-			return response({ message: t("auth.logout.success") }, 200);
-		}
-
-		await db.user.update({
-			where: { id: userToLogout.id },
-			data: {
-				refreshTokenHash: null,
-				refreshTokenExpiresAt: null,
-			},
-		});
-		await clearRefreshTokenCookie();
-
-		return response({ message: t("auth.logout.success") }, 200);
+		return sendSuccess(data, t("auth.logout.success"));
 	} catch (err) {
 		return handleApiError(err);
 	}

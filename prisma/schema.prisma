@@ -213,13 +213,12 @@ model Menu {
 model OrderItem {
   id        Int     @id @default(autoincrement()) @map("order_item_id")
   orderId   Int     @map("order_id")
-  variantId Int     @map("variant_id")
   quantity  Int
   price     Decimal @db.Decimal(10, 2)
+  variantId String  @map("variant_id") @db.Uuid
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_order")
 
   @@index([orderId], map: "idx_order_items_order_id")
-  @@index([variantId], map: "idx_order_items_variant_id")
   @@map("order_items")
 }
 
@@ -235,6 +234,7 @@ model Order {
   status        String      @default("pending") @db.VarChar(20)
   createdAt     DateTime?   @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt     DateTime?   @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  checkout_id   String      @unique @db.Uuid
   items         OrderItem[]
   user          User        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_orders_user")
 
@@ -308,10 +308,13 @@ model User {
   role                       user_role         @default(user)
   avatar_url                 String?           @db.VarChar(255)
   public_id                  String?           @db.VarChar(255)
+  resend_count               Int               @default(0)
+  last_resent_at             DateTime?         @db.Timestamptz(6)
   addresses                  Address[]
   cart                       Cart?
   checkoutSessions           CheckoutSession[]
   orders                     Order[]
+  refresh_tokens             refresh_tokens[]
   wishlists                  wishlists[]
 
   @@map("users")
@@ -501,6 +504,20 @@ model wishlists {
 
   @@unique([user_id, variant_id], map: "unique_user_variant")
   @@index([user_id], map: "idx_wishlist_user_id")
+}
+
+model refresh_tokens {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id              Int
+  token_hash           String
+  expires_at           DateTime  @db.Timestamp(6)
+  remember_me          Boolean?  @default(false)
+  user_agent           String?
+  ip_address           String?
+  is_revoked           Boolean?  @default(false)
+  replaced_by_token_id String?   @db.Uuid
+  created_at           DateTime? @default(now()) @db.Timestamp(6)
+  users                User      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_user")
 }
 
 enum user_role {

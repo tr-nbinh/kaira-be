@@ -43,7 +43,7 @@ export function handleApiError(error: unknown) {
 
 	const err = error as ApiError;
 	return Response.json(
-		{ success: false, message: err.message || "Internal Server Error", code: err.code },
+		{ success: false, message: err.message || "Internal Server Error", code: err.code, data: err.data },
 		{ status: err.status || 500 },
 	);
 }

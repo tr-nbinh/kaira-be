@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 		const data = await cartService.getCartItems(userId, locale);
 		return sendSuccess(data, "Get cart items successfully");
 	} catch (error) {
-		handleApiError(error);
+		return handleApiError(error);
 	}
 }
 

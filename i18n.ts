@@ -1,8 +1,6 @@
-import { notFound } from "next/navigation";
-
 export const locales = ["en", "vi"] as const; // Sử dụng 'as const' cho kiểu tuple cụ thể
 export type Locale = (typeof locales)[number]; // Kiểu Locale: "en" | "vi"
-export const defaultLocale: Locale = "en";
+export const defaultLocale: Locale = "vi";
 
 // --- Kiểu cho hàm dịch thuật (Translation Function) ---
 export type TranslationFunction = (key: string, variables?: Record<string, string | number>) => string;
@@ -19,18 +17,21 @@ const translationFunctionCache = new Map<Locale, Promise<TranslationFunction>>()
  * @returns Đối tượng phẳng với các key dạng dot-notation.
  */
 const flattenMessages = (nestedMessages: any, prefix = ""): Record<string, string> => {
-	return Object.keys(nestedMessages).reduce((acc, key) => {
-		const value = nestedMessages[key];
-		const prefixedKey = prefix ? `${prefix}.${key}` : key;
-		if (typeof value === "object" && value !== null && !Array.isArray(value)) {
-			// Nếu là đối tượng và không phải mảng, tiếp tục đệ quy để làm phẳng
-			Object.assign(acc, flattenMessages(value, prefixedKey));
-		} else {
-			// Nếu là giá trị cuối cùng, thêm vào đối tượng phẳng
-			acc[prefixedKey] = value;
-		}
-		return acc;
-	}, {} as Record<string, string>); // Khởi tạo accumulator là một Record<string, string> rỗng
+	return Object.keys(nestedMessages).reduce(
+		(acc, key) => {
+			const value = nestedMessages[key];
+			const prefixedKey = prefix ? `${prefix}.${key}` : key;
+			if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+				// Nếu là đối tượng và không phải mảng, tiếp tục đệ quy để làm phẳng
+				Object.assign(acc, flattenMessages(value, prefixedKey));
+			} else {
+				// Nếu là giá trị cuối cùng, thêm vào đối tượng phẳng
+				acc[prefixedKey] = value;
+			}
+			return acc;
+		},
+		{} as Record<string, string>,
+	); // Khởi tạo accumulator là một Record<string, string> rỗng
 };
 
 /**

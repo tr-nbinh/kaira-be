@@ -38,6 +38,8 @@ export const cartService = {
 							},
 						},
 					},
+					skip: 0,
+					take: 10,
 				},
 			},
 		});
@@ -86,10 +88,10 @@ export const cartService = {
 				color: colorObj?.attribute_value_translations[0].name || null,
 				size: sizeObj?.attribute_value_translations[0].name || null,
 				stock: variant.stock,
-				price: variant.price,
+				price: Number(variant.price),
 				quantity: cartItem.quantity,
 				imageUrl: variant.variant_images[0].url || "",
-				displayPrice: isEn ? parseFloat((Number(variant.price) * usdRate).toFixed(2)) : variant.price,
+				displayPrice: isEn ? parseFloat((Number(variant.price) * usdRate).toFixed(2)) : Number(variant.price),
 				displayFinalPrice: isEn
 					? parseFloat((Number(variant.price) * cartItem.quantity * usdRate).toFixed(2))
 					: Number(variant.price) * cartItem.quantity,
@@ -206,12 +208,11 @@ export const cartService = {
 			return acc + finalUnitPrice * item.quantity;
 		}, 0);
 
+		const finalPrice = Number(variant.price) * quantity;
 		return {
 			updatedQuantity: quantity,
-			cartItemFinalPrice: isEn
-				? parseFloat((Number(variant.price) * quantity * usdRate).toFixed(2))
-				: variant.price,
-			subTotal: isEn ? subTotal.toFixed(2) : subTotal,
+			cartItemFinalPrice: isEn ? parseFloat((finalPrice * usdRate).toFixed(2)) : finalPrice,
+			subTotal: isEn ? parseFloat(subTotal.toFixed(2)) : subTotal,
 		};
 	},
 

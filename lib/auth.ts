@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { JWTPayload, jwtVerify, SignJWT, type JWTVerifyResult } from "jose";
 import { cookies } from "next/headers";
 import { v4 as uuidv4 } from "uuid";
+import { ApiError } from "./utils/api-error";
 
 export interface DecodedToken {
 	id: number;
@@ -20,22 +21,18 @@ export async function comparePassword(password: string, hashedPassword: string):
 	return await bcrypt.compare(password, hashedPassword);
 }
 
-export function generateRefreshToken(): string {
-	return uuidv4(); // Generates a UUID string (e.g., '1b9d67b2-ad3b-4876-9c47-df90c6a3c6d3')
-}
-
 export async function hashRefreshToken(refreshToken: string): Promise<string> {
-	return await bcrypt.hash(refreshToken, SALT_ROUNDS);
-}
-
-export async function compareRefreshToken(refreshToken: string, hashedRefreshToken: string): Promise<boolean> {
-	return await bcrypt.compare(refreshToken, hashedRefreshToken);
+	const msgUint8 = new TextEncoder().encode(refreshToken);
+	const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
+	const hashArray = Array.from(new Uint8Array(hashBuffer));
+	const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+	return hashHex;
 }
 
 export async function generateAccessToken(payload: JWTPayload) {
 	const jwtSecret = process.env.JWT_SECRET;
 	if (!jwtSecret) {
-		throw new Error("JWT_SECRET is not defined in environment variables.");
+		throw new ApiError("JWT_SECRET is not defined in environment variables.", 404);
 	}
 	const secretKey = new TextEncoder().encode(jwtSecret);
 
@@ -54,33 +51,16 @@ export async function verifyToken(token: string): Promise<DecodedToken> {
 }
 
 export const setRefreshTokenCookie = async (token: string, rememberMe: boolean) => {
-	const REFRESH_TOKEN_EXPIRATION_DAYS = 7; // Hoặc lấy từ biến môi trường
+	const REFRESH_TOKEN_EXPIRATION_DAYS = 7;
 	const MAX_AGE = rememberMe ? REFRESH_TOKEN_EXPIRATION_DAYS * 24 * 60 * 60 : undefined; // 0 để cookie biến mất khi đóng trình duyệt nếu không remember
 	const cookieStore = await cookies();
 	cookieStore.set({
-		name: "refreshToken",
+		name: "refresh_token",
 		value: token,
 		httpOnly: true,
-		secure: false, // bắt buộc khi dùng SameSite=None hoặc trong production
+		secure: process.env.NODE_ENV == "production", // bắt buộc khi dùng SameSite=None hoặc trong production
 		path: "/",
 		sameSite: "lax", // hoặc 'strict' hoặc 'none' nếu dùng cross-site
 		maxAge: MAX_AGE,
 	});
-};
-
-export const clearRefreshTokenCookie = async () => {
-	const cookieStore = await cookies();
-	cookieStore.set({
-		name: "refreshToken",
-		value: "",
-		httpOnly: true,
-		secure: false, // bắt buộc khi dùng SameSite=None hoặc trong production
-		path: "/",
-		sameSite: "lax", // hoặc 'strict' hoặc 'none' nếu dùng cross-site
-		maxAge: 0,
-	});
-};
-
-export const generateToken = (): string => {
-	return crypto.randomUUID();
 };

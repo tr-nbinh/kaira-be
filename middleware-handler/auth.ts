@@ -7,9 +7,10 @@ const PUBLIC_API_PATTERNS = [
 	/^\/api\/categories$/,
 	/^\/api\/testimonials$/,
 	/^\/api\/menus$/,
-	/^\/api\/colors$/,
-	/^\/api\/sizes$/,
 	/^\/api\/brands$/,
+	/^\/api\/attributes(\/.*|\?.*)?$/,
+	/^\/api\/blog(\/.*|\?.*)?$/,
+	/^\/api\/exchange-rate(\/.*|\?.*)?$/,
 	/^\/api\/products(\/.*|\?.*)?$/,
 ];
 const PUBLIC_API_PREFIX = "/api/auth";

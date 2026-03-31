@@ -1,5 +1,7 @@
 // lib/email.ts
 import nodemailer from "nodemailer";
+import path from "path";
+import fs from "fs/promises";
 
 type SendEmailOptions = {
 	to: string;
@@ -9,7 +11,7 @@ type SendEmailOptions = {
 
 // Tạo transporter SMTP (ví dụ với Gmail SMTP)
 const transporter = nodemailer.createTransport({
-	host: 'smtp.gmail.com',
+	host: "smtp.gmail.com",
 	port: 465,
 	secure: true, // true nếu dùng port 465
 	auth: {
@@ -17,6 +19,17 @@ const transporter = nodemailer.createTransport({
 		pass: process.env.EMAIL_PASS,
 	},
 });
+
+export const renderEmailTemplate = async (fileName: string, variables: Record<string, string>) => {
+	const filePath = path.join(process.cwd(), "email", "templates", fileName);
+	let html = await fs.readFile(filePath, "utf-8");
+
+	for (const key in variables) {
+		html = html.replaceAll(`{{${key}}}`, variables[key]);
+	}
+
+	return html;
+};
 
 export async function sendEmail({ to, subject, html }: SendEmailOptions) {
 	try {

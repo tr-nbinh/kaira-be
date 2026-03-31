@@ -48,6 +48,7 @@
             "new_token_issued": "A new token has been issued.",
             "token_not_found": "Refresh token not found in cookie",
             "invalid_token": "Invalid token.",
+            "token_expired": "Token is expired",
             "expired": "Session has expired.",
             "user_not_found": "No user found for the given token.",
             "revoked": "Token has been revoked.",
@@ -62,6 +63,12 @@
             "html": "<p>Please click the link below to reset your password:</p><a href=\"{link}\">Reset password</a>",
             "error": "The reset password link is expired. Create new",
             "required": "Please enter all informations"
+        },
+        "forgot_password": {
+            "success": "Reset link sent"
+        },
+        "resend_email": {
+            "too_many": "Verification email has been sent before"
         }
     },
     "cart": {
@@ -93,7 +100,15 @@
     "order": {
         "invalid": "Invalid order.",
         "failed": "Failed to create the order.",
-        "success": "Order created successfully."
+        "success": "Order created successfully.",
+        "address_notfound": "Address not found",
+        "variant_notfound": "Product not found",
+        "out_of_stock": "Product is out of stock",
+        "cart_not_found": "Your cart does not exist."
+    },
+    "address": {
+        "success": "Create address successfully",
+        "update_success": "The address has been updated"
     },
     "product": {
         "item_not_found": "The product does not exist"
@@ -142,6 +157,20 @@
             "forbidden": "You do not have permission to perform this action",
             "conflict": "Data already exists",
             "server_error": "Something went wrong, please try again"
+        }
+    },
+    "email": {
+        "verify_email": {
+            "title": "Verify your email",
+            "description": "Please click the button below to verify your account.",
+            "button_text": "Verify Email",
+            "footer": "This link will expire in 30 minutes."
+        },
+        "reset_password": {
+            "title": "Reset your password",
+            "description": "Please click the button below to reset password.",
+            "button_text": "Reset Password",
+            "footer": "This link will expire in 30 minutes."
         }
     }
 }
