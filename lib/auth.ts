@@ -50,9 +50,7 @@ export async function verifyToken(token: string): Promise<DecodedToken> {
 	return payload;
 }
 
-export const setRefreshTokenCookie = async (token: string, rememberMe: boolean) => {
-	const REFRESH_TOKEN_EXPIRATION_DAYS = 7;
-	const MAX_AGE = rememberMe ? REFRESH_TOKEN_EXPIRATION_DAYS * 24 * 60 * 60 : undefined; // 0 để cookie biến mất khi đóng trình duyệt nếu không remember
+export const setRefreshTokenCookie = async (token: string, maxAge: number) => {
 	const cookieStore = await cookies();
 	cookieStore.set({
 		name: "refresh_token",
@@ -61,6 +59,6 @@ export const setRefreshTokenCookie = async (token: string, rememberMe: boolean) 
 		secure: process.env.NODE_ENV == "production",
 		path: "/",
 		sameSite: "none", // hoặc 'strict' hoặc 'none' nếu dùng cross-site
-		maxAge: MAX_AGE,
+		maxAge,
 	});
 };

@@ -218,7 +218,8 @@ export const authService = {
 			},
 		});
 
-		await setRefreshTokenCookie(refreshToken, rememberMe);
+		const maxAge = rememberMe ? 7 * 24 * 60 * 60 : 0; // 0 để cookie biến mất khi đóng trình duyệt nếu không remember
+		await setRefreshTokenCookie(refreshToken, maxAge);
 
 		return { accessToken };
 	},
@@ -265,7 +266,8 @@ export const authService = {
 			},
 		});
 
-		await setRefreshTokenCookie(newRefreshToken, !!token.remember_me);
+		const maxAge = !!token.remember_me ? 7 * 24 * 60 * 60 : 0; // 0 để cookie biến mất khi đóng trình duyệt nếu không remember
+		await setRefreshTokenCookie(newRefreshToken, maxAge);
 
 		return { accessToken };
 	},
@@ -279,6 +281,6 @@ export const authService = {
 			},
 		});
 
-		(await cookies()).delete("refresh_token");
+		await setRefreshTokenCookie("", 0);
 	},
 };
