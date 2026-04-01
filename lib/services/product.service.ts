@@ -7,13 +7,12 @@ import { product_status } from "@prisma/client";
 export const productService = {
 	async getProducts(locale: string, params: ProductFilter, userId?: number) {
 		const { colors, minPrice, maxPrice, bestReviewed, bestSeller, newArrival } = params;
-		const productWhereInput = {
-			OR: [
-				...(bestReviewed !== undefined ? [{ best_reviewed: bestReviewed }] : [{}]),
-				...(bestSeller !== undefined ? [{ best_seller: bestSeller }] : [{}]),
-				...(newArrival !== undefined ? [{ new_arrival: newArrival }] : [{}]),
-			],
-		};
+		const orConditions = [
+			...(bestReviewed !== undefined ? [{ best_reviewed: bestReviewed }] : []),
+			...(bestSeller !== undefined ? [{ best_seller: bestSeller }] : []),
+			...(newArrival !== undefined ? [{ new_arrival: newArrival }] : []),
+		];
+		const productWheresInput = orConditions.length > 0 ? { OR: orConditions } : {};
 		const variantWhereInput = {
 			AND: [
 				// Lọc theo màu sắc
@@ -35,7 +34,7 @@ export const productService = {
 		const productsPromise = db.products.findMany({
 			where: {
 				status: product_status.active,
-				...productWhereInput,
+				...productWheresInput,
 				product_variants: { some: variantWhereInput },
 			},
 			skip: (params.page - 1) * params.limit,
@@ -85,7 +84,7 @@ export const productService = {
 			db.products.count({
 				where: {
 					status: product_status.active,
-					...productWhereInput,
+					...productWheresInput,
 					product_variants: { some: variantWhereInput },
 				},
 			}),
