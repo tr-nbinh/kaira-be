@@ -1,4 +1,3 @@
-import { response } from "@/lib/helpers/api-helpers";
 import { getApiI18nContext } from "@/lib/helpers/api-i18n-context";
 import { authService } from "@/lib/services/auth.service";
 import { sendSuccess } from "@/lib/utils/api-response";

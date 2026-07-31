@@ -4,32 +4,36 @@ import { handleApiError } from "@/lib/utils/handleError";
 
 export async function GET(req: Request) {
 	try {
-		const locale = getLocaleFromRequest(req);
-		const menus = await db.menu.findMany({
-			orderBy: {
-				order: "asc",
-			},
-			select: {
-				id: true,
-				icon: true,
-				path: true,
-				order: true,
-				parentId: true,
-				translations: {
-					where: { languageCode: locale },
-					select: {
-						name: true,
-					},
-				},
-			},
-		});
+		// const locale = getLocaleFromRequest(req);
+		// const menus = await db.menu.findMany({
+		// 	orderBy: {
+		// 		order: "asc",
+		// 	},
+		// 	select: {
+		// 		id: true,
+		// 		icon: true,
+		// 		path: true,
+		// 		order: true,
+		// 		parentId: true,
+		// 		translations: {
+		// 			where: { languageCode: locale },
+		// 			select: {
+		// 				name: true,
+		// 			},
+		// 		},
+		// 	},
+		// });
 
-		const formattedMenus = menus.map((menu) => {
-			const { translations, ...newMenu } = menu;
-			return { ...newMenu, name: translations[0]?.name };
-		});
+		// const formattedMenus = menus.map((menu) => {
+		// 	const { translations, ...newMenu } = menu;
+		// 	return { ...newMenu, name: translations[0]?.name };
+		// });
 
-		return Response.json(formattedMenus, { status: 200 });
+		// return Response.json(formattedMenus, { status: 200 });
+		return Response.json({
+			test: "I AM ON VERCEL",
+			time: Date.now(),
+		});
 	} catch (err) {
 		return handleApiError(err);
 	}
