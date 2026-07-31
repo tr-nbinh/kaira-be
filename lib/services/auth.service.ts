@@ -59,6 +59,10 @@ export const authService = {
 			throw new ApiError(t("auth.reset_password.email_not_registered"), 404);
 		}
 
+		if (!user.isVerified) {
+			throw new ApiError("lỗi", 404);
+		}
+
 		const { rawOtp, hashedOtp, expiresAt } = await generateOtp();
 		const newOtp = await db.otp.create({
 			data: { code: hashedOtp, type: "resetpassword", expiresAt, userId: user.id },
