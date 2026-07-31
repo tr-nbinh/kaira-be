@@ -1,15 +1,11 @@
 import { db } from "@/lib/db";
 import { getLocaleFromRequest } from "@/lib/helpers/api-i18n-context";
+import { sendSuccess } from "@/lib/utils/api-response";
+import { handleApiError } from "@/lib/utils/handleError";
 
 export async function GET(req: Request) {
 	try {
-		console.log("[GET /api/menus] 1. Route entered");
-
 		const locale = getLocaleFromRequest(req);
-		console.log("[GET /api/menus] 2. Locale:", locale);
-
-		console.log("[GET /api/menus] 3. Before Prisma");
-
 		const menus = await db.menu.findMany({
 			orderBy: {
 				order: "asc",
@@ -31,8 +27,6 @@ export async function GET(req: Request) {
 			},
 		});
 
-		console.log("[GET /api/menus] 4. After Prisma");
-
 		const formattedMenus = menus.map((menu) => {
 			const { translations, ...newMenu } = menu;
 
@@ -42,26 +36,8 @@ export async function GET(req: Request) {
 			};
 		});
 
-		console.log("[GET /api/menus] 5. Response OK");
-
-		return Response.json(formattedMenus, {
-			status: 200,
-		});
+		return sendSuccess(formattedMenus);
 	} catch (err) {
-		console.error("[GET /api/menus] ERROR:", err);
-
-		return Response.json(
-			{
-				success: false,
-				type: (err as any)?.constructor?.name,
-				name: (err as any)?.name,
-				message: (err as any)?.message,
-				stack: (err as any)?.stack,
-				error: err,
-			},
-			{
-				status: 500,
-			},
-		);
+		return handleApiError(err);
 	}
 }

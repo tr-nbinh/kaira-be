@@ -15,6 +15,7 @@ const PUBLIC_API_PATTERNS = [
 	/^\/api\/provinces(\/.*|\?.*)?$/,
 	/^\/api\/homepage-categories(\/.*|\?.*)?$/,
 	/^\/api\/shipping(\/.*|\?.*)?$/,
+	/^\/api\/collections(\/.*|\?.*)?$/,
 ];
 const PUBLIC_API_PREFIX = "/api/auth";
 
