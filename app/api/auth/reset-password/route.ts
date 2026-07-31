@@ -6,8 +6,8 @@ import { ResetPasswordSchema } from "@/lib/validations/auth.validation";
 
 export async function POST(req: Request) {
 	try {
-		const { token, password, confirmPassword } = await req.json();
-		const validatedData = ResetPasswordSchema.parse({ token, password, confirmPassword });
+		const body = await req.json();
+		const validatedData = ResetPasswordSchema.parse(body);
 		const { t } = await getApiI18nContext(req);
 		const data = await authService.resetPassword(validatedData, t);
 		return sendSuccess(data, t("auth.reset_password.succes"));

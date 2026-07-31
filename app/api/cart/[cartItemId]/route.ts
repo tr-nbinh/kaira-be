@@ -4,26 +4,25 @@ import { ApiError } from "@/lib/utils/api-error";
 import { sendSuccess } from "@/lib/utils/api-response";
 import { getAuthenticatedUserId } from "@/lib/utils/auth-util";
 import { handleApiError } from "@/lib/utils/handleError";
-import { deleteVariantSchema, updateQuantitySchema } from "@/lib/validations/cart.validation";
+import { deleteCartItemSchema, updateQuantitySchema } from "@/lib/validations/cart.validation";
 import { NextRequest } from "next/server";
 
 interface RouteParams {
-	variantId: string;
+	cartItemId: string;
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
 	try {
-		const { t, locale } = await getApiI18nContext(req);
+		const { t } = await getApiI18nContext(req);
 
 		const userId = getAuthenticatedUserId(req);
 		if (!userId) {
 			throw new ApiError(t("auth.unauthorized"), 401);
 		}
-		const { variantId } = await params;
-		console.log(variantId);
-		const validatedVariantId = deleteVariantSchema.parse({ variantId });
+		const { cartItemId } = await params;
+		const validatedVariantId = deleteCartItemSchema.parse({ cartItemId });
 
-		const data = await cartService.deleteItem(userId, validatedVariantId.variantId, locale);
+		const data = await cartService.deleteItem(userId, validatedVariantId.cartItemId);
 		return sendSuccess(data, t("cart.delete_success"));
 	} catch (err) {
 		return handleApiError(err);
@@ -33,18 +32,17 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Rou
 // Update quantity
 export async function PATCH(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
 	try {
-		const { t, locale } = await getApiI18nContext(req);
-
+		const { t } = await getApiI18nContext(req);
 		const userId = getAuthenticatedUserId(req);
 		if (!userId) {
 			throw new ApiError(t("auth.unauthorized"), 401);
 		}
 
-		const { variantId } = await params;
+		const { cartItemId } = await params;
 		const { quantity } = await req.json();
-		const validatedData = updateQuantitySchema.parse({ variantId, quantity });
+		const validatedData = updateQuantitySchema.parse({ cartItemId, quantity });
 
-		const data = await cartService.updateQuantity(userId, validatedData.variantId, validatedData.quantity, locale);
+		const data = await cartService.updateQuantity(userId, validatedData.cartItemId, validatedData.quantity);
 		return sendSuccess(data, t("cart.update_success"));
 	} catch (err) {
 		return handleApiError(err);

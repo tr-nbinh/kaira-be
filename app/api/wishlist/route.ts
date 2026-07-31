@@ -4,6 +4,7 @@ import { ApiError } from "@/lib/utils/api-error";
 import { sendSuccess } from "@/lib/utils/api-response";
 import { getAuthenticatedUserId } from "@/lib/utils/auth-util";
 import { handleApiError } from "@/lib/utils/handleError";
+import { PagingSchema } from "@/lib/validations/base.validation";
 import { Prisma } from "@prisma/client";
 import { NextRequest } from "next/server";
 
@@ -15,7 +16,10 @@ export async function GET(req: NextRequest) {
 		if (!userId) {
 			throw new ApiError(t("auth.unauthorized"), 401);
 		}
-		const data = await wishlistService.getWishlistItems(userId, locale);
+		const { searchParams } = new URL(req.url);
+		const rawParams = Object.fromEntries(searchParams.entries());
+		const validatedParams = PagingSchema.parse(rawParams);
+		const data = await wishlistService.getWishlistItems(validatedParams, userId, locale);
 		return sendSuccess(data, "Get wishlish items successfully");
 	} catch (error) {
 		return handleApiError(error);

@@ -1,7 +1,6 @@
 import { db } from "@/lib/db";
 import { getLocaleFromRequest } from "@/lib/helpers/api-i18n-context";
 import { handleApiError } from "@/lib/utils/handleError";
-import { Menu } from "@prisma/client";
 
 export async function GET(req: Request) {
 	try {

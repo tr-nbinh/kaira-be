@@ -30,9 +30,9 @@ export async function POST(req: NextRequest) {
 		if (!userId) {
 			throw new ApiError(t("auth.unauthorized"), 401);
 		}
-		const addressData = await req.json();
-		const validatedDat = AddressSchema.parse(addressData);
-		const data = await addressService.createAddress(validatedDat, userId);
+		const body = await req.json();
+		const validatedData = AddressSchema.parse(body);
+		const data = await addressService.createAddress(validatedData, userId);
 		return sendSuccess(data, t("address.success"));
 	} catch (error) {
 		return handleApiError(error);

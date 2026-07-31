@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { UUIDSchema } from "./base.validation";
 
 export const variantIdSchema = z.string().trim().pipe(z.uuid("validation.string.uuid"));
 
@@ -8,12 +9,12 @@ export const quantitySchema = z.coerce
 	.min(1, "validation.number.min");
 
 export const updateQuantitySchema = z.object({
-	variantId: variantIdSchema,
+	cartItemId: UUIDSchema,
 	quantity: quantitySchema,
 });
 
-export const deleteVariantSchema = z.object({
-	variantId: variantIdSchema,
+export const deleteCartItemSchema = z.object({
+	cartItemId: UUIDSchema,
 });
 
 export const addToCartSchema = z.object({

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xác Thực Tài Khoản</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #111111;
+            background-color: #ffffff;
+            line-height: 1.6;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #000000;
+            margin: 0;
+            display: inline-block;
+            border-bottom: 2px solid #000000;
+            padding-bottom: 5px;
+        }
+
+        .content {
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #000000;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        p {
+            font-size: 15px;
+            color: #444444;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        /* Khu vực hiển thị mã OTP tối giản */
+        .otp-container {
+            background-color: #f8f9fa;
+            border: 1px solid #e5e5e5;
+            padding: 24px;
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .otp-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #777777;
+            margin-bottom: 8px;
+        }
+
+        .otp-code {
+            font-family: Monaco, Consolas, 'Courier New', monospace;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: 6px;
+            color: #000000;
+            margin: 0;
+        }
+
+        /* Nút kích hoạt Link xác thực */
+        .button-container {
+            text-align: center;
+            margin: 35px 0;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: #000000;
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 14px 32px;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            border: 1px solid #000000;
+        }
+
+        .note-box {
+            border-left: 3px solid #111111;
+            padding-left: 15px;
+            margin: 30px 0;
+        }
+
+        .note-box p {
+            margin: 0;
+            font-size: 13px;
+            color: #666666;
+            font-style: italic;
+        }
+
+        .footer {
+            margin-top: 60px;
+            padding-top: 20px;
+            border-top: 1px solid #eeeeee;
+            text-align: center;
+        }
+
+        .footer p {
+            font-size: 12px;
+            color: #888888;
+            margin-bottom: 5px;
+        }
+
+        .footer a {
+            color: #111111;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="email-container">
+        <div class="header">
+            <div class="logo">BRANDNAME</div>
+        </div>
+
+        <div class="content">
+            <h1>Xác thực tài khoản của bạn</h1>
+            <p>Xin chào,</p>
+            <p>Cảm ơn bạn đã đăng ký tài khoản tại hệ thống của chúng tôi. Để hoàn tất quá trình xác thực và kích hoạt
+                tài khoản, vui lòng sử dụng một trong hai phương thức dưới đây:</p>
+
+            <div class="otp-container">
+                <div class="otp-label">Mã OTP của bạn</div>
+                <div class="otp-code">{{OTP_CODE}}</div>
+            </div>
+
+            <p>Hoặc bạn có thể bấm trực tiếp vào liên kết dưới đây để hệ thống tự động xác thực nhanh chóng:</p>
+            <div class="button-container">
+                <a href="https://yourdomain.com/verify-email?id={{USER_UUID}}" class="btn">XÁC THỰC TÀI KHOẢN</a>
+            </div>
+
+            <div class="note-box">
+                <p>Mã OTP và liên kết xác thực này chỉ có hiệu lực trong vòng 15 phút. Nếu bạn không thực hiện yêu cầu
+                    này, vui lòng bỏ qua email.</p>
+            </div>
+
+            <p>Trân trọng,<br><strong>Đội ngũ BrandName</strong></p>
+        </div>
+
+        <div class="footer">
+            <p>Mọi thắc mắc xin vui lòng liên hệ <a href="mailto:support@yourdomain.com">support@yourdomain.com</a></p>
+            <p>&copy; 2026 BrandName. All rights reserved.</p>
+        </div>
+    </div>
+
+</body>
+
+</html>

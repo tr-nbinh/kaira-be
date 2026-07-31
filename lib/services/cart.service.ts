@@ -1,51 +1,68 @@
 import { getVndToUsdRate } from "../currency";
 import { db } from "../db";
 import { ApiError } from "../utils/api-error";
+import { PagingRequest } from "../validations/base.validation";
 
 export const cartService = {
-	async getCartItems(userId: number, locale: string) {
-		const cart = await db.cart.findFirst({
-			where: { userId: userId },
+	async getCartItems(params: PagingRequest, userId: number, locale: string) {
+		const itemsPromise = db.cartItem.findMany({
+			where: { cart: { userId } },
+			skip: params.limit * (params.page - 1),
+			take: params.limit,
 			select: {
-				items: {
+				id: true,
+				quantity: true,
+				product_variants: {
 					select: {
-						quantity: true,
-						product_variants: {
+						id: true,
+						stock: true,
+						price: true,
+						compare_at_price: true,
+						option_value_ids: true,
+
+						products: {
 							select: {
 								id: true,
-								stock: true,
-								price: true,
-								option_value_ids: true,
-								variant_images: {
-									select: {
-										url: true,
-									},
+
+								variantImages: {
+									select: { url: true, is_main: true, attributeValueId: true },
 									orderBy: [{ is_main: "desc" }, { id: "asc" }],
-									take: 1,
 								},
-								products: {
-									select: {
-										id: true,
-										product_translations: {
-											where: { language_code: locale },
-											select: {
-												name: true,
-												slug: true,
-											},
-										},
-									},
+
+								product_translations: {
+									where: { language_code: locale },
+									select: { name: true, slug: true },
 								},
 							},
 						},
 					},
-					skip: 0,
-					take: 10,
 				},
 			},
 		});
-		if (!cart) return [];
 
-		const cartItems = cart.items;
+		const [cartItems, totalItems] = await Promise.all([
+			itemsPromise,
+			db.cartItem.count({
+				where: {
+					cart: {
+						userId,
+					},
+				},
+			}),
+		]);
+
+		if (!cartItems.length) {
+			return {
+				data: [],
+				meta: {
+					limit: params.limit,
+					page: params.page,
+					totalCount: 0,
+					totalPages: 0,
+				},
+			};
+		}
+
 		const allOptionIds = Array.from(
 			new Set(cartItems.flatMap((item) => item.product_variants.option_value_ids as string[])),
 		);
@@ -64,23 +81,20 @@ export const cartService = {
 			},
 		});
 
-		const isEn = locale == "en";
-		const usdRate = await getVndToUsdRate();
-
-		const subTotal = cartItems.reduce((acc, item) => {
-			const finalUnitPrice = isEn
-				? Number(item.product_variants.price) * usdRate
-				: Number(item.product_variants.price);
-			return acc + finalUnitPrice * item.quantity;
-		}, 0);
-
 		const result = cartItems.map((cartItem) => {
 			const variant = cartItem.product_variants;
 			const vOptionIds = variant.option_value_ids as string[];
 			const colorObj = attributeValues.find((av) => vOptionIds.includes(av.id) && av.attributes.slug === "color");
 			const sizeObj = attributeValues.find((av) => vOptionIds.includes(av.id) && av.attributes.slug === "size");
+			const color = colorObj?.attribute_value_translations[0].name!;
+			const size = sizeObj?.attribute_value_translations[0].name;
+			const variantSummary = size ? `${color} - ${size}` : color;
+			const targetImage = cartItem.product_variants.products.variantImages.find((img) =>
+				vOptionIds.includes(img.attributeValueId!),
+			)!;
 
 			return {
+				id: cartItem.id,
 				variantId: variant.id,
 				productId: variant.products.id,
 				slug: variant.products.product_translations[0].slug || "",
@@ -90,15 +104,20 @@ export const cartService = {
 				stock: variant.stock,
 				price: Number(variant.price),
 				quantity: cartItem.quantity,
-				imageUrl: variant.variant_images[0].url || "",
-				displayPrice: isEn ? parseFloat((Number(variant.price) * usdRate).toFixed(2)) : Number(variant.price),
-				displayFinalPrice: isEn
-					? parseFloat((Number(variant.price) * cartItem.quantity * usdRate).toFixed(2))
-					: Number(variant.price) * cartItem.quantity,
-				currency: isEn ? "USD" : "VND",
+				imageUrl: targetImage.url || "",
+				currency: "VND",
+				variantSummary,
 			};
 		});
-		return { cartItems: result, subTotal: subTotal };
+		return {
+			data: result,
+			meta: {
+				limit: params.limit,
+				page: params.page,
+				totalCount: totalItems,
+				totalPages: Math.ceil(totalItems / params.limit),
+			},
+		};
 	},
 
 	async addToCart(userId: number, variantId: string, quantity: number, t: Function) {
@@ -144,7 +163,7 @@ export const cartService = {
 				where: { cartId: cart.id },
 			});
 
-			return { cartCount };
+			return { count: cartCount };
 		});
 	},
 
@@ -163,7 +182,7 @@ export const cartService = {
 		return { cartCount };
 	},
 
-	async updateQuantity(userId: number, variantId: string, quantity: number, locale: string) {
+	async updateQuantity(userId: number, cartItemId: string, quantity: number) {
 		const cart = await db.cart.findFirst({
 			where: { userId: userId },
 		});
@@ -171,12 +190,20 @@ export const cartService = {
 			throw new ApiError("Product not found in cart", 404);
 		}
 
+		const cartItem = await db.cartItem.findFirst({
+			where: { id: cartItemId },
+			select: { variantId: true },
+		});
+		if (!cartItem) {
+			throw new ApiError("Product not found in cart", 404);
+		}
+
 		const variant = await db.product_variants.findFirst({
-			where: { id: variantId },
-			select: { stock: true, price: true },
+			where: { id: cartItem.variantId },
+			select: { stock: true },
 		});
 		if (!variant) {
-			throw new ApiError("Product has been archived", 401);
+			throw new ApiError("Product has been archived", 404);
 		}
 
 		if (quantity > variant.stock) {
@@ -184,41 +211,16 @@ export const cartService = {
 		}
 
 		await db.cartItem.update({
-			where: { cartId_variantId: { cartId: cart.id, variantId: variantId } },
+			where: { id: cartItemId },
 			data: { quantity },
 		});
 
-		const userCart = await db.cartItem.findMany({
-			where: { cartId: cart.id },
-			include: {
-				product_variants: {
-					select: {
-						price: true,
-					},
-				},
-			},
-		});
-
-		const isEn = locale == "en";
-		const usdRate = await getVndToUsdRate();
-		const subTotal = userCart.reduce((acc, item) => {
-			const finalUnitPrice = isEn
-				? Number(item.product_variants.price) * usdRate
-				: Number(item.product_variants.price);
-			return acc + finalUnitPrice * item.quantity;
-		}, 0);
-
-		const finalPrice = Number(variant.price) * quantity;
-		return {
-			updatedQuantity: quantity,
-			cartItemFinalPrice: isEn ? parseFloat((finalPrice * usdRate).toFixed(2)) : finalPrice,
-			subTotal: isEn ? parseFloat(subTotal.toFixed(2)) : subTotal,
-		};
+		return { quantity };
 	},
 
-	async deleteItem(userId: number, variantId: string, locale: string) {
+	async deleteItem(userId: number, cartItemId: string) {
 		const deletedItems = await db.cartItem.deleteMany({
-			where: { variantId: variantId, cart: { userId: userId } },
+			where: { id: cartItemId, cart: { userId: userId } },
 		});
 		if (deletedItems.count == 0) {
 			throw new ApiError("Product not found in your cart", 404);
@@ -243,18 +245,8 @@ export const cartService = {
 		if (!cart) {
 			throw new ApiError("Your cart is empty", 404);
 		}
-
 		const cartCount = await db.cartItem.count({ where: { cartId: cart.id } });
 
-		const isEn = locale == "en";
-		const usdRate = await getVndToUsdRate();
-		const subTotal = cart.items.reduce((acc, item) => {
-			const finalUnitPrice = isEn
-				? Number(item.product_variants.price) * item.quantity * usdRate
-				: Number(item.product_variants.price);
-			return acc + finalUnitPrice * item.quantity;
-		}, 0);
-
-		return { cartCount, variantId, subTotal: isEn ? subTotal.toFixed(2) : subTotal };
+		return { cartCount };
 	},
 };

@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { getLocaleFromRequest } from "@/lib/helpers/api-i18n-context";
-import { productService } from "@/lib/services/product.service";
+import { GetProductsOptions, productService } from "@/lib/services/product.service";
 import { sendSuccess } from "@/lib/utils/api-response";
 import { getAuthenticatedUserId } from "@/lib/utils/auth-util";
 import { handleApiError } from "@/lib/utils/handleError";
@@ -11,11 +11,12 @@ export async function GET(req: NextRequest) {
 	try {
 		const { searchParams } = new URL(req.url);
 		const rawParams = Object.fromEntries(searchParams.entries());
-		const validatedParams = ProductFilterSchema.parse(rawParams);
-		console.log(rawParams, validatedParams);
+		const filters = ProductFilterSchema.parse(rawParams);
 		const userId = getAuthenticatedUserId(req);
-		const local = getLocaleFromRequest(req);
-		const data = await productService.getProducts(local, validatedParams, userId);
+		const locale = getLocaleFromRequest(req);
+
+		const options: GetProductsOptions = { locale, userId, filters };
+		const data = await productService.getProducts(options);
 		return sendSuccess(data, "Get products successfully");
 	} catch (error) {
 		return handleApiError(error);
@@ -24,41 +25,49 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: Request) {
 	try {
-		const body = await req.json();
-		const { categoryIds, translations, ...productData } = body;
+		const body: {
+			brand_id: string;
+			status: string;
+			is_best_seller: boolean;
+			categoryId: string;
+			product_translations: any;
+			product_variants: any;
+		} = await req.json();
 
-		const result = await db.$transaction(async (tx: any) => {
-			// 1. Tạo product
-			const product = await tx.products.create({
-				data: productData,
-			});
+		const product = await db.products.create({
+			data: {
+				brand_id: body.brand_id,
+				status: "active",
+				is_best_seller: body.is_best_seller,
 
-			// 2. Tạo các bản ghi product_category
-			const categoryRelations = categoryIds.map((category_id: number) => ({
-				product_id: product.product_id,
-				category_id,
-			}));
+				// -----------------------------------------------
+				// Product translations
+				// -----------------------------------------------
+				product_translations: body.product_translations,
 
-			await tx.product_category.createMany({
-				data: categoryRelations,
-			});
+				// -----------------------------------------------
+				// Category: women-tops
+				// -----------------------------------------------
+				product_categories: {
+					create: {
+						category_id: body.categoryId,
+					},
+				},
 
-			if (translations && Array.isArray(translations)) {
-				await tx.product_translations.createMany({
-					data: translations.map((t: any) => ({
-						product_id: product.product_id,
-						language_code: t.language_code,
-						name: t.name,
-						description: t.description,
-						slug: t.slug,
-					})),
-				});
-			}
+				// -----------------------------------------------
+				// Variants
+				// -----------------------------------------------
+				product_variants: body.product_variants,
+			},
 
-			return product;
+			include: {
+				product_translations: true,
+				product_categories: true,
+				product_variants: true,
+			},
 		});
 
-		return Response.json(result, { status: 201 });
+		return sendSuccess(product);
 	} catch (error) {
 		return handleApiError(error);
 	}

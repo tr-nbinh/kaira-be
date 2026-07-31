@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { sendSuccess } from "@/lib/utils/api-response";
 import { handleApiError } from "@/lib/utils/handleError";
 
 export async function GET() {
@@ -10,7 +11,7 @@ export async function GET() {
 			},
 		});
 
-		return Response.json(brands, { status: 200 });
+		return sendSuccess(brands);
 	} catch (err) {
 		return handleApiError(err);
 	}

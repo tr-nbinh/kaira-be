@@ -28,4 +28,32 @@ export const attributeService = {
 
 		return result;
 	},
+
+	async getSizes(locale: string) {
+		const size = await db.attributes.findFirst({
+			where: { slug: "size" },
+			select: {
+				attribute_values: {
+					select: {
+						id: true,
+						value_code: true,
+						attribute_value_translations: {
+							where: { language_code: locale },
+							select: {
+								name: true,
+							},
+						},
+					},
+				},
+			},
+		});
+		if (!size) return [];
+
+		const result = size.attribute_values.map((attr) => {
+			const { attribute_value_translations, ...rest } = attr;
+			return { ...rest, name: attribute_value_translations[0].name };
+		});
+
+		return result;
+	},
 };
