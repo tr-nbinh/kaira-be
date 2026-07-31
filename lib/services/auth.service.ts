@@ -51,31 +51,6 @@ export const authService = {
 		return { verificationId: newOtp.id };
 	},
 
-	async verifyEmail(token: string) {
-		const user = await db.user.findFirst({
-			// where: {
-			// 	verificationToken: token,
-			// 	verificationTokenExpiresAt: { gte: new Date() },
-			// },
-		});
-		if (!user) {
-			throw new ApiError("Token is expired or invalid", 400);
-		}
-
-		await db.user.update({
-			where: { id: user.id },
-			data: {
-				isVerified: true,
-				verificationToken: null,
-				verificationTokenExpiresAt: null,
-				resend_count: 0,
-				last_resent_at: null,
-			},
-		});
-
-		return { isVerified: true };
-	},
-
 	async forgotPassword(email: string, t: Function) {
 		const user = await db.user.findUnique({
 			where: { email },
@@ -148,60 +123,6 @@ export const authService = {
 		]);
 
 		return { isResetedPassword: true };
-	},
-
-	async resendEmail(email: string, t: Function) {
-		const user = await db.user.findUnique({
-			where: { email },
-		});
-		if (!user) {
-			throw new ApiError(t("auth.verify.email_not_registered"), 404);
-		}
-
-		if (user.isVerified) {
-			throw new ApiError(t("auth.verify.verified"), 409);
-		}
-
-		const now = new Date();
-		const lastSent = user.last_resent_at ? new Date(user.last_resent_at) : new Date(0);
-		const waitTimes = [60, 180, 600, 1800];
-		const waitTime =
-			waitTimes[Math.min(user.resend_count - 1 < 0 ? 0 : user.resend_count - 1, waitTimes.length - 1)];
-
-		const secondsElapsed = Math.floor((now.getTime() - lastSent.getTime()) / 1000);
-		if (secondsElapsed < waitTime) {
-			const remaining = waitTime - secondsElapsed;
-			throw new ApiError(t("auth.resend_email.too_many"), 429, undefined, {
-				retryAfter: remaining,
-			});
-		}
-
-		const verificationToken = crypto.randomBytes(32).toString("hex");
-		const expiration = new Date(Date.now() + 30 * 60 * 1000); // 30 phút
-		await db.user.update({
-			where: { email },
-			data: {
-				verificationToken: verificationToken,
-				verificationTokenExpiresAt: expiration,
-				last_resent_at: now,
-				resend_count: user.resend_count + 1,
-			},
-		});
-
-		const replaceObj = {
-			title: t("email.verify_email.title"),
-			description: t("email.verify_email.description"),
-			button_text: t("email.verify_email.button_text"),
-			footer: t("email.verify_email.footer"),
-			verify_link: `${process.env.FRONTEND_URL}/auth/confirm-email?token=${verificationToken}`,
-		};
-		const html = await renderEmailTemplate("verify-email.html", replaceObj);
-		const mailOptions = {
-			to: email,
-			subject: t("auth.email.subject"),
-			html,
-		};
-		await sendEmail(mailOptions);
 	},
 
 	async login({ email, password, rememberMe }: LoginInput, requestInfo: RequestInfo, t: Function) {
