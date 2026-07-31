@@ -10,11 +10,7 @@ export async function POST(request: NextRequest) {
 	try {
 		const { t } = await getApiI18nContext(request);
 		const token = (await cookies()).get("refresh_token")?.value;
-		if (!token) {
-			return response({ message: t("auth.refresh.token_not_found") }, 401);
-		}
 		const data = await authService.logout(token);
-
 		return sendSuccess(data, t("auth.logout.success"));
 	} catch (err) {
 		return handleApiError(err);

@@ -1,8 +1,9 @@
 import { db } from "../db";
+import { PagingRequest } from "../validations/base.validation";
 
 export const wishlistService = {
-	async getWishlistItems(userId: number, locale: string) {
-		const items = await db.wishlists.findMany({
+	async getWishlistItems(params: PagingRequest, userId: number, locale: string) {
+		const wishlistPromise = db.wishlists.findMany({
 			where: { user_id: userId },
 			select: {
 				id: true,
@@ -10,17 +11,18 @@ export const wishlistService = {
 					select: {
 						id: true,
 						stock: true,
+						price: true,
+						compare_at_price: true,
 						option_value_ids: true,
-						variant_images: {
-							select: {
-								url: true,
-							},
-							orderBy: [{ is_main: "desc" }, { id: "asc" }],
-							take: 1,
-						},
 						products: {
 							select: {
 								id: true,
+
+								variantImages: {
+									select: { url: true, is_main: true, attributeValueId: true },
+									orderBy: [{ is_main: "desc" }, { id: "asc" }],
+								},
+
 								product_translations: {
 									where: { language_code: locale },
 									select: {
@@ -33,9 +35,31 @@ export const wishlistService = {
 					},
 				},
 			},
+			skip: (params.page - 1) * params.limit,
+			take: params.limit,
 		});
+		const [wishlistItems, totalItems] = await Promise.all([
+			wishlistPromise,
+			db.wishlists.count({
+				where: { user_id: userId },
+			}),
+		]);
 
-		const allOptionIds = Array.from(new Set(items.flatMap((p) => p.product_variants.option_value_ids as string[])));
+		if (!wishlistItems.length) {
+			return {
+				data: [],
+				meta: {
+					limit: params.limit,
+					page: params.page,
+					totalCount: 0,
+					totalPages: 0,
+				},
+			};
+		}
+
+		const allOptionIds = Array.from(
+			new Set(wishlistItems.flatMap((p) => p.product_variants.option_value_ids as string[])),
+		);
 		const attributeValues = await db.attribute_values.findMany({
 			where: { id: { in: allOptionIds } },
 			select: {
@@ -50,10 +74,16 @@ export const wishlistService = {
 			},
 		});
 
-		const result = items.map((item) => {
+		const result = wishlistItems.map((item) => {
 			const vOptionIds = item.product_variants.option_value_ids as string[];
 			const colorObj = attributeValues.find((av) => vOptionIds.includes(av.id) && av.attributes.slug === "color");
 			const sizeObj = attributeValues.find((av) => vOptionIds.includes(av.id) && av.attributes.slug === "size");
+			const color = colorObj?.attribute_value_translations[0].name!;
+			const size = sizeObj?.attribute_value_translations[0].name;
+			const variantSummary = size ? `${color} - ${size}` : color;
+			let targetImage = item.product_variants.products.variantImages.find((img) =>
+				vOptionIds.includes(img.attributeValueId!),
+			);
 
 			return {
 				id: item.id,
@@ -62,13 +92,23 @@ export const wishlistService = {
 				productId: item.product_variants.products.id,
 				variantId: item.product_variants.id,
 				stock: item.product_variants.stock,
-				imageUrl: item.product_variants.variant_images[0].url || "",
-				color: colorObj?.attribute_value_translations[0].name || null,
-				size: sizeObj?.attribute_value_translations[0].name || null,
+				price: item.product_variants.price.toNumber(),
+				salePrice: item.product_variants.compare_at_price?.toNumber() ?? null,
+				imageUrl: targetImage?.url || "",
+				currency: "VND",
+				variantSummary,
 			};
 		});
 
-		return result;
+		return {
+			data: result,
+			meta: {
+				limit: params.limit,
+				page: params.page,
+				totalCount: totalItems,
+				totalPages: Math.ceil(totalItems / params.limit),
+			},
+		};
 	},
 
 	async addToWishlist(variantId: string, userId: number) {

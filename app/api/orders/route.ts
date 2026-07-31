@@ -1,69 +1,97 @@
 import { db } from "@/lib/db";
-import { response } from "@/lib/helpers/api-helpers";
 import { getApiI18nContext } from "@/lib/helpers/api-i18n-context";
+import { ApiError } from "@/lib/utils/api-error";
 import { getAuthenticatedUserId } from "@/lib/utils/auth-util";
 import { handleApiError } from "@/lib/utils/handleError";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(req: NextRequest) {
-	// try {
-	// 	const { t } = await getApiI18nContext(req);
-	// 	const userId = getAuthenticatedUserId(req);
-	// 	if (!userId) {
-	// 		return response({ message: t("auth.unauthorized") }, 401);
-	// 	}
-	// 	const { orderItems, ...data } = await req.json();
-	// 	if (!orderItems || !orderItems.length) {
-	// 		return response({ message: t("order.invalid") }, 400);
-	// 	}
-	// 	const subTotal = orderItems.reduce((acc: any, curr: any) => acc + curr.finalPrice * curr.quantity, 0);
-	// 	const result = await db.$transaction(async (tx) => {
-	// 		const newOrder = await tx.order.create({
-	// 			data: {
-	// 				addressId: data.addressId,
-	// 				shippingFee: 20,
-	// 				totalAmount: subTotal + 20,
-	// 				paymentMethod: data.paymentMethod,
-	// 				note: data.note,
-	// 				userId: userId,
-	// 			},
-	// 		});
-	// 		if (!newOrder) {
-	// 			return response({ message: t("order.failed") }, 400);
-	// 		}
-	// 		const orderItemsData = await orderItems.map((item: any) => ({
-	// 			orderId: newOrder.id,
-	// 			variantId: item.variantId,
-	// 			quantity: item.quantity,
-	// 			price: item.finalPrice,
-	// 		}));
-	// 		await tx.orderItem.createMany({
-	// 			data: orderItemsData,
-	// 		});
-	// 		const cart = await db.cart.findUnique({
-	// 			where: { userId: userId },
-	// 		});
-	// 		if (!cart) {
-	// 			return response({ message: t("cart.cart_not_found") }, 400);
-	// 		}
-	// 		const updateStock = Promise.all(
-	// 			orderItems.map((item: any) => {
-	// 				return tx.productVariant.update({
-	// 					where: { id: item.variantId },
-	// 					data: { quantityInStock: { decrement: item.quantity } },
-	// 				});
-	// 			})
-	// 		);
-	// 		const deleteFromCart = tx.cartItem.deleteMany({
-	// 			where: {
-	// 				cartId: cart.id,
-	// 			},
-	// 		});
-	// 		await Promise.all([updateStock, deleteFromCart]);
-	// 		return newOrder;
-	// 	});
-	// 	return response({ data: result, message: "" }, 201);
-	// } catch (error) {
-	// 	return handleApiError(error);
-	// }
+export async function GET(request: NextRequest) {
+	try {
+		const { t, locale } = await getApiI18nContext(request);
+		const userId = getAuthenticatedUserId(request);
+		if (!userId) {
+			throw new ApiError(t("auth.unauthorized"), 401);
+		}
+
+		// 2. Lấy Query Parameters từ URL
+		const { searchParams } = new URL(request.url);
+		const page = parseInt(searchParams.get("page") || "1", 10);
+		const limit = parseInt(searchParams.get("limit") || "10", 10);
+		const status = searchParams.get("status");
+
+		const skip = (page - 1) * limit;
+
+		// 3. Xây dựng điều kiện lọc (Where condition)
+		const whereCondition: any = { userId };
+		if (status) {
+			whereCondition.status = status;
+		}
+
+		// 4. Query dữ liệu từ Database bằng Prisma
+		const [orders, totalItems] = await Promise.all([
+			db.order.findMany({
+				where: whereCondition,
+				orderBy: { createdAt: "desc" },
+				skip,
+				take: limit,
+				select: {
+					id: true,
+					status: true,
+					paymentStatus: true,
+					paymentMethod: true,
+					totalAmount: true,
+					createdAt: true,
+					items: {
+						take: 1, // Chỉ lấy item đầu tiên để hiển thị thumbnail trên danh sách
+						select: {
+							productName: true,
+							imageUrl: true,
+							quantity: true,
+							price: true,
+							totalPrice: true,
+						},
+					},
+					_count: {
+						select: { items: true }, // Đếm tổng số món hàng
+					},
+				},
+			}),
+			db.order.count({ where: whereCondition }),
+		]);
+
+		// 5. Format lại kết quả trả về khớp 100% với Interface của Angular
+		const formattedData = orders.map((order) => {
+			const firstItem = order.items[0] || null;
+			return {
+				id: order.id,
+				status: order.status,
+				paymentStatus: order.paymentStatus,
+				paymentMethod: order.paymentMethod,
+				totalAmount: order.totalAmount,
+				totalItems: order._count.items,
+				createdAt: order.createdAt,
+				firstItem: firstItem ? firstItem : null,
+			};
+		});
+
+		const totalPages = Math.ceil(totalItems / limit);
+
+		return NextResponse.json(
+			{
+				success: true,
+				statusCode: 200,
+				message: "Lấy danh sách đơn hàng thành công.",
+				data: formattedData,
+				pagination: {
+					page,
+					limit,
+					totalItems,
+					totalPages,
+				},
+			},
+			{ status: 200 },
+		);
+	} catch (error) {
+		return handleApiError(error);
+	}
 }

@@ -1,6 +1,7 @@
-import { email, z } from "zod";
+import { otp_type } from "@prisma/client";
+import { z } from "zod";
 
-const emailSchema = z.email("Email không đúng định dạng");
+const emailSchema = z.email("Invalid email format");
 const tokenSchema = z.string().min(1, "Token is required");
 const passwordSchema = z
 	.string()
@@ -13,17 +14,20 @@ const passwordSchema = z
 
 export const RegisterSchema = z
 	.object({
-		username: z
+		fullName: z
 			.string()
-			.min(3, "Tên đăng nhập phải có ít nhất 3 ký tự")
-			.max(15, "Tên đăng nhập không được quá 20 ký tự"),
+			.min(2, "Full name must be at least 2 characters")
+			.max(50, "Full name must be at most 50 characters"),
 
-		email: z.email("Email không đúng định dạng"),
+		email: emailSchema,
 		password: passwordSchema,
 		confirmPassword: z.string(),
+		agreeTerms: z.boolean().refine((val) => val === true, {
+			message: "You must accept terms",
+		}),
 	})
 	.refine((data) => data.password === data.confirmPassword, {
-		message: "Mật khẩu xác nhận không khớp",
+		message: "Passwords do not match",
 		path: ["confirmPassword"], // Lỗi sẽ được gán chính xác vào field này
 	});
 export type RegisterInput = z.infer<typeof RegisterSchema>;
@@ -38,7 +42,8 @@ export const ForgotPasswordSchema = z.object({
 
 export const ResetPasswordSchema = z
 	.object({
-		token: tokenSchema,
+		verificationId: z.uuid(),
+		otp: z.string().regex(/^\d{6}$/, "OTP must contain exactly 6 digits"),
 		password: passwordSchema,
 		confirmPassword: z.string(),
 	})
@@ -58,3 +63,22 @@ export const LoginSchema = z.object({
 	rememberMe: z.boolean().optional().default(false),
 });
 export type LoginInput = z.infer<typeof LoginSchema>;
+
+export const CheckEmailExistSchema = z.object({
+	email: emailSchema,
+});
+
+export const OtpSessionSchema = z.object({
+	verificationId: z.uuid(),
+});
+
+export const VerifyOtpSchema = z.object({
+	verificationId: z.uuid(),
+	otp: z.string().regex(/^\d{6}$/, "OTP must contain exactly 6 digits"),
+	otpType: z.enum(otp_type),
+});
+export type VerifyOtpInput = z.infer<typeof VerifyOtpSchema>;
+
+export const ResendOtpSchema = z.object({
+	verificationId: z.uuid(),
+});

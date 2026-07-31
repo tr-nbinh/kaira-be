@@ -1,37 +1,44 @@
 import { renderEmailTemplate, sendEmail } from "@/email/mailer";
+import { RequestInfo } from "@/models/request-info.model";
 import crypto from "crypto";
-import { cookies, headers } from "next/headers";
-import { comparePassword, generateAccessToken, hashPassword, hashRefreshToken, setRefreshTokenCookie } from "../auth";
+import { comparePassword, generateAccessToken, hashPassword, hashRefreshToken } from "../auth";
 import { db } from "../db";
 import { ApiError } from "../utils/api-error";
-import { LoginInput, RegisterInput, ResetPasswordInput } from "../validations/auth.validation";
+import { clearAuthCookies, setAuthCookies } from "../utils/authCookies";
+import { LoginInput, RegisterInput, ResetPasswordInput, VerifyOtpInput } from "../validations/auth.validation";
+import { ERROR_CODES } from "../errors/error-codes";
+import bcrypt from "bcryptjs";
+import { generateOtp } from "../utils/otp";
 
 export const authService = {
-	async register({ email, username, password, confirmPassword }: RegisterInput, t: Function) {
+	async register({ email, fullName, password }: RegisterInput, t: Function) {
 		const existingUser = await db.user.findUnique({ where: { email } });
 		if (existingUser) {
-			throw new ApiError(t("auth.register.email_used"), 409);
+			const data = { email: ERROR_CODES.EMAIL_EXISTS };
+			throw new ApiError(t("auth.register.email_used"), 409, undefined, data);
 		}
 
 		const hashedPassword = await hashPassword(password);
-		const verificationToken = crypto.randomBytes(32).toString("hex");
-		const verificationTokenExp = new Date(Date.now() + 30 * 60 * 1000);
-		await db.user.create({
+		const newUser = await db.user.create({
 			data: {
 				email,
-				username,
+				fullName,
 				passwordHash: hashedPassword,
-				verificationToken: verificationToken,
-				verificationTokenExpiresAt: verificationTokenExp,
+			},
+		});
+
+		const { rawOtp, hashedOtp, expiresAt } = await generateOtp();
+		const newOtp = await db.otp.create({
+			data: {
+				code: hashedOtp,
+				type: "verifyemail",
+				expiresAt,
+				userId: newUser.id,
 			},
 		});
 
 		const replaceObj = {
-			title: t("email.verify_email.title"),
-			description: t("email.verify_email.description"),
-			button_text: t("email.verify_email.button_text"),
-			footer: t("email.verify_email.footer"),
-			verify_link: `${process.env.FRONTEND_URL}/auth/confirm-email?token=${verificationToken}`,
+			otp: rawOtp,
 		};
 		const html = await renderEmailTemplate("verify-email.html", replaceObj);
 		const mailOptions = {
@@ -41,15 +48,15 @@ export const authService = {
 		};
 		await sendEmail(mailOptions);
 
-		return { email, isVerified: false };
+		return { verificationId: newOtp.id };
 	},
 
 	async verifyEmail(token: string) {
 		const user = await db.user.findFirst({
-			where: {
-				verificationToken: token,
-				verificationTokenExpiresAt: { gte: new Date() },
-			},
+			// where: {
+			// 	verificationToken: token,
+			// 	verificationTokenExpiresAt: { gte: new Date() },
+			// },
 		});
 		if (!user) {
 			throw new ApiError("Token is expired or invalid", 400);
@@ -69,7 +76,7 @@ export const authService = {
 		return { isVerified: true };
 	},
 
-	async forgotPasswor(email: string, t: Function) {
+	async forgotPassword(email: string, t: Function) {
 		const user = await db.user.findUnique({
 			where: { email },
 		});
@@ -77,53 +84,68 @@ export const authService = {
 			throw new ApiError(t("auth.reset_password.email_not_registered"), 404);
 		}
 
-		const resetToken = crypto.randomBytes(32).toString("hex");
-		const expiration = new Date(Date.now() + 30 * 60 * 1000); // 30 phút
-		await db.user.update({
-			where: { email },
-			data: {
-				resetToken: resetToken,
-				resetTokenExpire: expiration,
-			},
+		const { rawOtp, hashedOtp, expiresAt } = await generateOtp();
+		const newOtp = await db.otp.create({
+			data: { code: hashedOtp, type: "resetpassword", expiresAt, userId: user.id },
 		});
-
-		const resetLink = `${process.env.FRONTEND_URL}/auth/reset-password?token=${resetToken}`;
-		const replaceObj = {
-			title: t("email.reset_password.title"),
-			description: t("email.reset_password.description"),
-			button_text: t("email.reset_password.button_text"),
-			footer: t("email.reset_password.footer"),
-			verify_link: resetLink,
-		};
-		const html = await renderEmailTemplate("verify-email.html", replaceObj);
-		const mailOptions = {
-			to: email,
-			subject: t("auth.reset_password.subject"),
-			html,
-		};
-		await sendEmail(mailOptions);
+		return { verificationId: newOtp.id };
+		// const resetLink = `${process.env.FRONTEND_URL}/auth/reset-password?token=${resetToken}`;
+		// const replaceObj = {
+		// 	title: t("email.reset_password.title"),
+		// 	description: t("email.reset_password.description"),
+		// 	button_text: t("email.reset_password.button_text"),
+		// 	footer: t("email.reset_password.footer"),
+		// 	verify_link: resetLink,
+		// };
+		// const html = await renderEmailTemplate("verify-email.html", replaceObj);
+		// const mailOptions = {
+		// 	to: email,
+		// 	subject: t("auth.reset_password.subject"),
+		// 	html,
+		// };
+		// await sendEmail(mailOptions);
 	},
 
-	async resetPassword({ token, password, confirmPassword }: ResetPasswordInput, t: Function) {
-		const user = await db.user.findUnique({
-			where: {
-				resetToken: token,
-				resetTokenExpire: { gte: new Date() },
-			},
-		});
-		if (!user) {
-			throw new ApiError(t("auth.reset_password.error"), 404);
+	async resetPassword({ verificationId, otp, password }: ResetPasswordInput, t: Function) {
+		const otpRecord = await db.otp.findUnique({ where: { id: verificationId } });
+		if (!otpRecord || otpRecord.isUsed || new Date() > otpRecord.expiresAt) {
+			throw new ApiError("Otp không tồn tại hoặc đã hết hạn.", 400, "OTP_INVALID");
+		}
+		if (otpRecord.type !== "resetpassword") {
+			throw new ApiError("Mã xác thực này không hợp lệ cho hành động hiện tại.", 400, "OTP_TYPE_MISMATCH");
 		}
 
-		const hashedPassword = await hashPassword(password);
-		await db.user.update({
-			where: { id: user.id },
-			data: {
-				passwordHash: hashedPassword,
-				resetToken: null,
-				resetTokenExpire: null,
-			},
-		});
+		const MAX_ATTEMPTS = 5;
+		if (otpRecord.attempts >= MAX_ATTEMPTS) {
+			throw new ApiError(
+				"Mã OTP này đã bị khóa do sai quá 5 lần. Vui lòng thực hiện lại hành động lấy lại mật khẩu",
+				400,
+			);
+		}
+
+		const isOtpCorrect = await bcrypt.compare(otp, otpRecord.code);
+		if (!isOtpCorrect) {
+			if (otpRecord.attempts + 1 == MAX_ATTEMPTS) {
+				await db.otp.update({ where: { id: verificationId }, data: { isUsed: true } });
+			} else {
+				await db.otp.update({
+					where: { id: verificationId },
+					data: { attempts: otpRecord.attempts + 1 },
+				});
+			}
+			throw new ApiError("Mã OTP không chính xác", 400, "OTP_INCORRECT", {
+				remainingAttempts: MAX_ATTEMPTS - (otpRecord.attempts == 0 ? 1 : otpRecord.attempts),
+			});
+		}
+
+		const passwordHashed = await hashPassword(password);
+		await db.$transaction([
+			db.user.update({
+				where: { id: otpRecord.userId },
+				data: { isVerified: true, passwordHash: passwordHashed },
+			}),
+			db.otp.update({ where: { id: verificationId }, data: { isUsed: true } }),
+		]);
 
 		return { isResetedPassword: true };
 	},
@@ -182,24 +204,26 @@ export const authService = {
 		await sendEmail(mailOptions);
 	},
 
-	async login({ email, password, rememberMe }: LoginInput, t: Function) {
+	async login({ email, password, rememberMe }: LoginInput, requestInfo: RequestInfo, t: Function) {
 		const user = await db.user.findUnique({ where: { email } });
 		if (!user) {
-			throw new ApiError(t("auth.login.unauthorized"), 401);
+			throw new ApiError(t("auth.login.unauthorized"), 401, ERROR_CODES.INVALID_CREDENTIALS);
 		}
 
 		const isPasswordValid = await comparePassword(password, user.passwordHash);
 		if (!isPasswordValid) {
-			throw new ApiError(t("auth.login.unauthorized"), 401);
+			throw new ApiError(t("auth.login.unauthorized"), 401, ERROR_CODES.INVALID_CREDENTIALS);
 		}
 
 		if (!user.isVerified) {
-			throw new ApiError(t("auth.login.verified"), 403, undefined, { email: user.email });
+			const { rawOtp, hashedOtp, expiresAt } = await generateOtp();
+			await db.otp.create({ data: { code: hashedOtp, expiresAt, type: "verifyemail", userId: user.id } });
+
+			throw new ApiError(t("auth.login.verified"), 403, ERROR_CODES.EMAIL_NOT_VERIFIED, { email: user.email });
 		}
 
 		const accessTokenPayload = {
 			id: user.id,
-			username: user.username,
 			email: user.email,
 		};
 		const accessToken = await generateAccessToken(accessTokenPayload);
@@ -214,17 +238,17 @@ export const authService = {
 				token_hash: refreshTokenHash,
 				expires_at: expiresAt,
 				remember_me: rememberMe,
-				user_agent: (await headers()).get("user-agent"),
+				user_agent: requestInfo.userAgent,
+				ip_address: requestInfo.ip,
 			},
 		});
 
-		const maxAge = rememberMe ? 7 * 24 * 60 * 60 : undefined;
-		await setRefreshTokenCookie(refreshToken, maxAge);
+		await setAuthCookies(accessToken, refreshToken);
 
-		return { accessToken };
+		return { id: user.id, avatar_url: user.avatar_url, email: user.email, fullName: user.fullName };
 	},
 
-	async refreshToken(oldRefreshToken: string, t: Function) {
+	async refreshToken(oldRefreshToken: string, requestInfo: RequestInfo, t: Function) {
 		const oldRefreshTokenHash = await hashRefreshToken(oldRefreshToken);
 		const token = await db.refresh_tokens.findFirst({
 			where: { token_hash: oldRefreshTokenHash },
@@ -256,6 +280,8 @@ export const authService = {
 				token_hash: newRefreshTokenHash,
 				expires_at: expiresAt,
 				remember_me: token.remember_me,
+				user_agent: requestInfo.userAgent,
+				ip_address: requestInfo.ip,
 			},
 		});
 		await db.refresh_tokens.update({
@@ -266,21 +292,153 @@ export const authService = {
 			},
 		});
 
-		const maxAge = !!token.remember_me ? 7 * 24 * 60 * 60 : undefined; // 0 để cookie biến mất khi đóng trình duyệt nếu không remember
-		await setRefreshTokenCookie(newRefreshToken, maxAge);
-
-		return { accessToken };
+		await setAuthCookies(accessToken, newRefreshToken);
 	},
 
-	async logout(refreshToken: string) {
-		const hash = await hashRefreshToken(refreshToken);
-		await db.refresh_tokens.updateMany({
-			where: { token_hash: hash },
+	async logout(refreshToken: string | undefined) {
+		if (refreshToken) {
+			const hash = await hashRefreshToken(refreshToken);
+			await db.refresh_tokens.updateMany({
+				where: { token_hash: hash },
+				data: {
+					is_revoked: true,
+				},
+			});
+		}
+
+		await clearAuthCookies();
+	},
+
+	async getCurrentUser(userId: number) {
+		return await db.user.findUniqueOrThrow({
+			where: { id: userId },
+			select: { id: true, avatar_url: true, email: true, fullName: true },
+		});
+	},
+
+	async checkEmailExists(email: string) {
+		const emailExisting = await db.user.findUnique({
+			where: { email },
+		});
+		return { isExists: !!emailExisting };
+	},
+
+	async getVerificationInfo(verificationId: string) {
+		const otpRecord = await db.otp.findUnique({
+			where: { id: verificationId },
+			include: {
+				user: true,
+			},
+		});
+		if (!otpRecord || otpRecord.isUsed || new Date() > otpRecord.expiresAt) {
+			throw new ApiError("Phiên xác thực không tồn tại hoặc đã hết hạn.", 400, "SESSION_INVALID");
+		}
+
+		const fullEmail = otpRecord.user.email;
+		const [namePart, domainPart] = fullEmail.split("@");
+		let maskedEmail = "";
+		if (namePart.length <= 2) {
+			maskedEmail = `${namePart[0]}*@${domainPart}`;
+		} else {
+			maskedEmail = `${namePart.slice(0, 2)}${"*".repeat(namePart.length - 3)}${namePart.slice(-1)}@${domainPart}`;
+		}
+
+		return { email: maskedEmail };
+	},
+
+	async verifyOtp(payload: VerifyOtpInput) {
+		const otpRecord = await db.otp.findUnique({
+			where: { id: payload.verificationId },
+		});
+		if (!otpRecord || otpRecord.isUsed || new Date() > otpRecord.expiresAt) {
+			throw new ApiError("Otp không tồn tại hoặc đã hết hạn.", 400, "OTP_INVALID");
+		}
+		if (otpRecord.type !== payload.otpType) {
+			throw new ApiError("Mã xác thực này không hợp lệ cho hành động hiện tại.", 400, "OTP_TYPE_MISMATCH");
+		}
+
+		const MAX_ATTEMPTS = 5;
+		if (otpRecord.attempts >= MAX_ATTEMPTS) {
+			throw new ApiError(
+				"Mã OTP này đã bị khóa do nhập sai quá 5 lần. Vui lòng bấm 'Gửi lại mã' để nhận mã mới",
+				400,
+			);
+		}
+
+		const isOtpCorrect = await bcrypt.compare(payload.otp, otpRecord.code);
+		if (!isOtpCorrect) {
+			if (otpRecord.attempts + 1 == MAX_ATTEMPTS) {
+				await db.otp.update({
+					where: { id: payload.verificationId },
+					data: { isUsed: true, attempts: otpRecord.attempts + 1 },
+				});
+			} else {
+				await db.otp.update({
+					where: { id: payload.verificationId },
+					data: { attempts: otpRecord.attempts + 1 },
+				});
+			}
+			throw new ApiError("Mã OTP không chính xác", 400, "OTP_INCORRECT", {
+				remainingAttempts: MAX_ATTEMPTS - (otpRecord.attempts + 1),
+			});
+		}
+
+		await db.$transaction([
+			db.user.update({ where: { id: otpRecord.userId }, data: { isVerified: true } }),
+			db.otp.update({ where: { id: payload.verificationId }, data: { isUsed: true } }),
+		]);
+
+		return { code: "VERIFY_EMAIL_SUCCESS", message: "Kích hoạt tài khoản thành công!" };
+	},
+
+	async resendOtp(verificationId: string) {
+		const oldOtpRecord = await db.otp.findUnique({
+			where: { id: verificationId },
+			include: { user: true },
+		});
+		if (!oldOtpRecord || oldOtpRecord.isUsed || new Date() > oldOtpRecord.expiresAt) {
+			throw new ApiError("Phiên xác thực không tồn tại hoặc hết hạn", 400);
+		}
+
+		const timePassed = Date.now() - oldOtpRecord.createdAt.getTime();
+		const COOLDOWN_TIME = 60 * 1000; // 60 giây đổi ra ms
+		if (timePassed < COOLDOWN_TIME) {
+			const remainingSeconds = Math.ceil((COOLDOWN_TIME - timePassed) / 1000);
+			throw new ApiError("Too many request", 429, "OTP_SPAM_LIMIT", {
+				code: "OTP_SPAM_LIMIT",
+				message: `Vui lòng đợi ${remainingSeconds} giây nữa trước khi bấm gửi lại.`,
+				remainingSeconds,
+			});
+		}
+
+		await db.otp.update({
+			where: { id: verificationId },
+			data: { isUsed: true },
+		});
+
+		const newRawOtp = crypto.randomInt(100000, 999999).toString();
+		const newHashedOtp = await bcrypt.hash(newRawOtp, 10);
+		const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+		const newOtpRecord = await db.otp.create({
 			data: {
-				is_revoked: true,
+				code: newHashedOtp,
+				type: oldOtpRecord.type,
+				expiresAt: expiresAt,
+				userId: oldOtpRecord.userId,
 			},
 		});
 
-		await setRefreshTokenCookie("", 0);
+		const replaceObj = {
+			otp: newRawOtp,
+		};
+		const html = await renderEmailTemplate("verify-email.html", replaceObj);
+		const mailOptions = {
+			to: oldOtpRecord.user.email,
+			subject: "Xác thực tài khoản",
+			html,
+		};
+		await sendEmail(mailOptions);
+
+		return { verificationId: newOtpRecord.id };
 	},
 };

@@ -34,5 +34,8 @@ export const ProductFilterSchema = z.object({
 	minPrice: z.coerce.number().min(0, "Giá thấp nhất không được âm").optional(),
 	maxPrice: z.coerce.number().positive("Giá cao nhất phải lớn hơn 0").optional(),
 });
-
 export type ProductFilter = z.infer<typeof ProductFilterSchema>;
+
+export const SlugSchema = z.object({
+	slug: z.string().nonempty(),
+});

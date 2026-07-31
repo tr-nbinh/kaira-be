@@ -1,29 +1,56 @@
 import { db } from "@/lib/db";
-import { response } from "@/lib/helpers/api-helpers";
+import { getApiI18nContext } from "@/lib/helpers/api-i18n-context";
+import { ApiError } from "@/lib/utils/api-error";
 import { getAuthenticatedUserId } from "@/lib/utils/auth-util";
-import { handleApiError } from "@/lib/utils/handleError";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
 	try {
-		const userId = getAuthenticatedUserId(req);
+		const { id: orderId } = await params;
+		const { t, locale } = await getApiI18nContext(request);
+		const userId = getAuthenticatedUserId(request);
 		if (!userId) {
-			return Response.json({ message: "UserId is invalid" }, { status: 400 });
+			throw new ApiError(t("auth.unauthorized"), 401);
+		}
+		// Query chi tiết đơn hàng cùng thông tin Address & Items
+		const order = await db.order.findUnique({
+			where: { id: orderId },
+			include: {
+				orderAddress: true,
+				items: true,
+			},
+		});
+
+		// Kiểm tra đơn hàng tồn tại & thuộc về user hiện tại
+		if (!order || order.userId !== userId) {
+			return NextResponse.json(
+				{
+					success: false,
+					statusCode: 404,
+					message: "Không tìm thấy thông tin đơn hàng hoặc bạn không có quyền truy cập.",
+				},
+				{ status: 404 },
+			);
 		}
 
-		const { id } = await params;
-		const orderId = parseInt(id);
-		if (!orderId) {
-			return Response.json({ message: "order id không hợp lệ" }, { status: 400 });
-		}
-
-		const order = await db.order.findUnique({ where: { userId, id: orderId } });
-		if (!order) {
-			return response({ message: "Order not found" }, 404);
-		}
-
-		return response({ data: order, message: "" });
+		return NextResponse.json(
+			{
+				success: true,
+				statusCode: 200,
+				message: "Lấy chi tiết đơn hàng thành công.",
+				data: order,
+			},
+			{ status: 200 },
+		);
 	} catch (error) {
-		handleApiError(error);
+		console.error("Error fetching order detail:", error);
+		return NextResponse.json(
+			{
+				success: false,
+				statusCode: 500,
+				message: "Lỗi server nội bộ khi lấy chi tiết đơn hàng.",
+			},
+			{ status: 500 },
+		);
 	}
 }

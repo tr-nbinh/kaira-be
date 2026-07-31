@@ -12,6 +12,9 @@ const PUBLIC_API_PATTERNS = [
 	/^\/api\/blogs(\/.*|\?.*)?$/,
 	/^\/api\/exchange-rate(\/.*|\?.*)?$/,
 	/^\/api\/products(\/.*|\?.*)?$/,
+	/^\/api\/provinces(\/.*|\?.*)?$/,
+	/^\/api\/homepage-categories(\/.*|\?.*)?$/,
+	/^\/api\/shipping(\/.*|\?.*)?$/,
 ];
 const PUBLIC_API_PREFIX = "/api/auth";
 
@@ -21,7 +24,7 @@ export async function authMiddleware(req: NextRequest) {
 	const pathname = req.nextUrl.pathname;
 	const isPublicApiPath =
 		PUBLIC_API_PATTERNS.some((pattern) => pattern.test(pathname)) || pathname.startsWith(PUBLIC_API_PREFIX);
-	const token = req.headers.get("Authorization")?.split(" ")[1] || req.cookies.get("token")?.value;
+	const token = req.headers.get("Authorization")?.split(" ")[1] || req.cookies.get("accessToken")?.value;
 
 	if (!isPublicApiPath) {
 		if (!token) {

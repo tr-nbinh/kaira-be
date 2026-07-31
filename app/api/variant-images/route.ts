@@ -13,7 +13,6 @@ export async function POST(req: Request) {
 
 		let imageFiles = formData.getAll("images");
 
-
 		const filesToUpload = imageFiles.filter((item) => item instanceof File) as File[];
 
 		if (filesToUpload.length === 0) {

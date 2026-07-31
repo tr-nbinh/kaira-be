@@ -9,8 +9,8 @@ export async function POST(req: Request) {
 		const { t } = await getApiI18nContext(req);
 		const { email } = await req.json();
 		const validatedData = ForgotPasswordSchema.parse({ email });
-		const data = await authService.forgotPasswor(validatedData.email, t);
-		return sendSuccess(data, t("auth.forgot_password.success"));
+		const data = await authService.forgotPassword(validatedData.email, t);
+		return sendSuccess(data);
 	} catch (error) {
 		return handleApiError(error);
 	}
