@@ -63,26 +63,29 @@ export const authService = {
 			throw new ApiError("lỗi", 404);
 		}
 
-		const { rawOtp, hashedOtp, expiresAt } = await generateOtp();
-		const newOtp = await db.otp.create({
-			data: { code: hashedOtp, type: "resetpassword", expiresAt, userId: user.id },
+		const otp = await db.otp.findFirst({
+			where: { userId: user.id, type: "resetpassword", isUsed: false },
+			orderBy: { createdAt: "desc" },
 		});
-		return { verificationId: newOtp.id };
-		// const resetLink = `${process.env.FRONTEND_URL}/auth/reset-password?token=${resetToken}`;
-		// const replaceObj = {
-		// 	title: t("email.reset_password.title"),
-		// 	description: t("email.reset_password.description"),
-		// 	button_text: t("email.reset_password.button_text"),
-		// 	footer: t("email.reset_password.footer"),
-		// 	verify_link: resetLink,
-		// };
-		// const html = await renderEmailTemplate("verify-email.html", replaceObj);
-		// const mailOptions = {
-		// 	to: email,
-		// 	subject: t("auth.reset_password.subject"),
-		// 	html,
-		// };
-		// await sendEmail(mailOptions);
+		if (!otp || otp.expiresAt < new Date()) {
+			const { rawOtp, hashedOtp, expiresAt } = await generateOtp();
+			const newOtp = await db.otp.create({
+				data: { code: hashedOtp, type: "resetpassword", expiresAt, userId: user.id },
+			});
+			const replaceObj = {
+				otp: rawOtp,
+				reset_password_url: `${process.env.FRONTEND_URL}/auth/reset-password?id=${newOtp.id}`,
+			};
+			const html = await renderEmailTemplate("reset-password.html", replaceObj);
+			const mailOptions = {
+				to: email,
+				subject: "Đặt lại mật khẩu",
+				html,
+			};
+			await sendEmail(mailOptions);
+		}
+
+		return {};
 	},
 
 	async resetPassword({ verificationId, otp, password }: ResetPasswordInput, t: Function) {
@@ -141,10 +144,30 @@ export const authService = {
 		}
 
 		if (!user.isVerified) {
-			const { rawOtp, hashedOtp, expiresAt } = await generateOtp();
-			await db.otp.create({ data: { code: hashedOtp, expiresAt, type: "verifyemail", userId: user.id } });
+			const otp = await db.otp.findFirst({
+				where: { userId: user.id, type: "verifyemail", isUsed: false },
+				orderBy: { createdAt: "desc" },
+			});
+			let verificationId = "";
+			if (!otp || otp.expiresAt < new Date()) {
+				const { rawOtp, hashedOtp, expiresAt } = await generateOtp();
+				const newOtp = await db.otp.create({
+					data: { code: hashedOtp, expiresAt, type: "verifyemail", userId: user.id },
+				});
+				verificationId = newOtp.id;
+				const html = await renderEmailTemplate("verify-email.html", { otp: rawOtp });
+				const mailOptions = {
+					to: email,
+					subject: "Xác thực tài khoản",
+					html,
+				};
+				await sendEmail(mailOptions);
+			}
 
-			throw new ApiError(t("auth.login.verified"), 403, ERROR_CODES.EMAIL_NOT_VERIFIED, { email: user.email });
+			throw new ApiError(t("auth.login.verified"), 403, ERROR_CODES.EMAIL_NOT_VERIFIED, {
+				email: user.email,
+				verificationId: verificationId || otp?.id,
+			});
 		}
 
 		const accessTokenPayload = {
