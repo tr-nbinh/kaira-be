@@ -364,12 +364,10 @@ export const authService = {
 			data: { isUsed: true },
 		});
 
-		const newRawOtp = crypto.randomInt(100000, 999999).toString();
-		const newHashedOtp = await bcrypt.hash(newRawOtp, 10);
-		const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+		const { rawOtp, expiresAt, hashedOtp } = await generateOtp();
 		const newOtpRecord = await db.otp.create({
 			data: {
-				code: newHashedOtp,
+				code: hashedOtp,
 				type: oldOtpRecord.type,
 				expiresAt: expiresAt,
 				userId: oldOtpRecord.userId,
@@ -377,7 +375,7 @@ export const authService = {
 		});
 
 		const replaceObj = {
-			otp: newRawOtp,
+			otp: rawOtp,
 		};
 		const html = await renderEmailTemplate("verify-email.html", replaceObj);
 		const mailOptions = {
